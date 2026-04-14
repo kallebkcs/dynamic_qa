@@ -1,0 +1,24 @@
+services:
+  database:
+    image: mongo:latest
+    container_name: db_questionario
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    build: ./backend
+    container_name: api_questionario
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - database
+    environment:
+      - MONGO_URL=mongodb://database:27017/questionarios
+
+volumes:
+  mongo_data:
