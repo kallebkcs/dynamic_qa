@@ -8,8 +8,72 @@ const questionarioSarcopenia = {
     idInterno: "sarcopenia",
     descricao: "Questionário para diagnóstico de Sarcopenia, amparado pelo European Working Group on Sarcopenia in Older People 2 (EWGSOP2)",
     criadoPor: "mim (idUsuario)",
-    primeiro: "encontrar_caso",
+    primeiro: "idp",
     blocos: [
+        {
+            idInterno: "idp",
+            titulo: "Identificação",
+            tipo: "identificacao",
+            primeiro: "idp_nome",
+            perguntas: 
+            [{
+                idInterno: "idp_nome",
+                escopo: "Qual o nome do paciente?",
+                tipo: "texto",
+                logica: "identificacao",
+                configuracao: {proximo: "idp_idade"}
+            },
+            {
+                idInterno: "idp_idade",
+                escopo: "Qual a idade do paciente?",
+                tipo: "numerico",
+                logica: "identificacao",
+                configuracao: {proximo: "idp_sexo"}
+            },
+            {
+                idInterno: "idp_sexo",
+                escopo: "Qual o sexo do paciente?",
+                tipo: "escolha_unica",
+                logica: "identificacao",
+                configuracao: [
+                    {
+                        opcao: "Masculino",
+                        proximo: "idp_raca"
+                    }, 
+                    {
+                        opcao: "Feminino",
+                        proximo: "idp_raca"
+                    }
+                ],
+            },
+            {
+                idInterno: "idp_raca",
+                escopo: "Qual a raça do paciente?",
+                tipo: "escolha_unica",
+                logica: "identificacao",
+                configuracao: [
+                    {
+                        opcao: "Branco",
+                        proximo: "idp_altura"
+                    }, 
+                    {
+                        opcao: "Negro",
+                        proximo: "idp_altura"
+                    },
+                    {
+                        opcao: "Asiático",
+                        proximo: "idp_altura"
+                    }
+                ],
+            },
+            {
+                idInterno: "idp_altura",
+                escopo: "Qual a altura do paciente (em metros)?",
+                tipo: "numerico",
+                logica: "identificacao",
+                configuracao: {proximo: {proximo: "encontrar_caso"}}
+            }]
+        },
         {
             idInterno: "encontrar_caso",
             titulo: "SARC-CaIF",
@@ -212,7 +276,6 @@ const questionarioSarcopenia = {
                 idInterno: "calculoPeso",
                 tipo: "calculoPeso",
                 logica: "redirecionamento",
-                contexto: "idp_sexo",
                 configuracao: {
                     regra: "maior_que",
                     limiar: 11,
