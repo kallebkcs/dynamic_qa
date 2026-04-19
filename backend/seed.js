@@ -71,6 +71,13 @@ const questionarioSarcopenia = {
                 escopo: "Qual a altura do paciente (em metros)?",
                 tipo: "numerico",
                 logica: "identificacao",
+                configuracao: {proximo: "idp_peso"}
+            },
+            {
+                idInterno: "idp_peso",
+                escopo: "Qual o peso do paciente (em kg)?",
+                tipo: "numerico",
+                logica: "identificacao",
                 configuracao: {proximo: {proximo: "encontrar_caso"}}
             }]
         },
@@ -506,7 +513,7 @@ const questionarioSarcopenia = {
                             valor: -1.2
                         }]
                     }],
-                    equacao: "\frac{0.244P + 7.8h + 6.6S - 0.098I + R - 3.3}{h^2}", // considerando um leitor e executor de equações latex
+                    equacao: "\\frac{0.244P + 7.8h + 6.6S - 0.098I + R - 3.3}{h^2}", // considerando um leitor e executor de equações latex
                     condicional: 
                     [{
                         opcao: "Masculino",

@@ -13,7 +13,7 @@ const idBlocoAtivo = ref(null)
 const idPerguntaAtiva = ref(null)
 
 // Memória do Questionário
-const respostas = ref({}) // { idPergunta: valor }
+const respostas = ref({})
 const pesoAcumulado = ref(0) // Para blocos do tipo "peso"
 
 // Getters
@@ -50,9 +50,9 @@ const carregarDados = async () => {
 }
 
 // Redirecionador
-const redirecionador = (configuracaoDaResposta) => {
+const redirecionador = (config) => {
   // Pegamos o objeto 'proximo' da configuração
-  const destino = configuracaoDaResposta.proximo;
+  const destino = config.proximo;
 
   // CASO A: Próxima Pergunta (String simples) 
   if (typeof destino === 'string') {
@@ -87,9 +87,12 @@ const redirecionador = (configuracaoDaResposta) => {
 const resolverLogica = (pergunta) => {
   // Começamos com a configuração bruta do banco de dados
   let configEfetiva = pergunta.configuracao; 
+  // Primeiramente, trata o tipo equação, que será o único diferente
+  if (pergunta.tipo === "equacao") configEfetiva = configEfetiva.condicional;
 
   // CONTEXTO: Se a pergunta depende de uma resposta anterior
   if (pergunta.contexto) {
+
     // Buscamos a pergunta que serve de contexto para saber o TIPO dela
     const perguntaContexto = questionario.value.blocos
         .find(b => b.idInterno === "idp").perguntas
@@ -102,6 +105,7 @@ const resolverLogica = (pergunta) => {
     if (perguntaContexto.tipo === 'escolha_unica') {
       console.log("CONFIG EFETIVA PRÉ FILTRO: ", configEfetiva)
       const termoParaBusca = typeof valorContexto === 'object' ? valorContexto.opcao : valorContexto;
+      console.log("TERMO PARA BUSCA: ", termoParaBusca)
       const itemConfig = configEfetiva.find(c => c.opcao === termoParaBusca);
       configEfetiva = itemConfig?.escolhido || configEfetiva;
       console.log("CONFIG EFETIVA PÓS FILTRO: ", configEfetiva)
@@ -114,17 +118,27 @@ const resolverLogica = (pergunta) => {
   }
   let logicaFinal = null;
 
-  // CASO: Perguntas Numéricas ou Cálculo de Peso
-  if (pergunta.tipo === 'numerico' || pergunta.tipo === 'calculoPeso') {
+  // CASO: Perguntas Numéricas
+  if (pergunta.tipo === 'numerico' || pergunta.tipo === 'calculoPeso' || pergunta.tipo === 'equacao') {
     // Escolhe o valor: ou o digitado no input, ou o acumulado do bloco de peso
-    const valorParaComparar = (pergunta.tipo === 'calculoPeso') 
-      ? pesoAcumulado.value 
-      : respostas.value[pergunta.idInterno];
+    let valorParaComparar;
+    switch (pergunta.tipo) {
+      case 'numerico':
+        valorParaComparar = respostas.value[pergunta.idInterno];
+        break;
+      case 'calculoPeso':
+        valorParaComparar = pesoAcumulado.value;
+        break;
+      case 'equacao':
+        valorParaComparar = calcularEquacao(pergunta);
+        break;
+    }
+    console.log(valorParaComparar)  
 
     const atendeRegra = (configEfetiva.regra === 'maior_que')
       ? valorParaComparar > configEfetiva.limiar
       : valorParaComparar < configEfetiva.limiar;
-    console.log(valorParaComparar, atendeRegra, configEfetiva)
+    console.log("VALOR PARA COMPARAR: ", valorParaComparar, " ATENDE REGRA? ", atendeRegra, configEfetiva)
     logicaFinal = atendeRegra ? configEfetiva.verdadeiro : configEfetiva.falso;
   } 
   
@@ -162,7 +176,7 @@ const proximoPasso = () => {
     logicaParaRedirecionar = resolverLogica(perguntaAtual.value);
   }
 
-  // Com o destino resolvido, chamamos o seu Redirecionador
+  // Com o destino resolvido, chamamos o Redirecionador
   if (logicaParaRedirecionar) {
     redirecionador(logicaParaRedirecionar);
   }
@@ -180,7 +194,7 @@ const perguntasExibidas = computed(() => {
 const estaRespondida = (pergunta) => {
   const valor = respostas.value[pergunta.idInterno];
 
-  // Regras baseadas no tipo da pergunta [cite: 13, 14, 15]
+  // Regras baseadas no tipo da pergunta
   switch (pergunta.tipo) {
     case 'texto':
       return valor !== undefined && valor.trim() !== '';
@@ -191,7 +205,7 @@ const estaRespondida = (pergunta) => {
     case 'escolha_multipla':
       return Array.isArray(valor) && valor.length > 0;
     case 'calculoPeso':
-      return true; // Sempre válida, pois é automática [cite: 10]
+      return true; // Sempre válida, pois é automática
     default:
       return !!valor;
   }
@@ -202,21 +216,73 @@ const podeAvancar = computed(() => {
   
   // O método every() garante que só retorne true se todas passarem no teste
   return perguntasExibidas.value.every(pergunta => {
-    if (pergunta.tipo === 'calculoPeso') return true; else return estaRespondida(pergunta);});
+    if (pergunta.tipo === 'calculoPeso' || pergunta.tipo === 'equacao') return true; else return estaRespondida(pergunta);});
 });
 
-const avancarPergunta = (configuracaoDaOpcao) => {
-  // Extraímos os dados da lógica (peso e proximo)
-  const infoLogica = configuracaoDaOpcao.escolhido || configuracaoDaOpcao;
+///////////////////////////////////////////////////////
+/////// EQUAÇÕES /////////////////////////////////////
+/////////////////////////////////////////////////////
+import evaluatex from 'evaluatex';
 
-  // Se lógica peso, some o peso
-  if (perguntaAtual.value.logica === 'peso' && infoLogica.peso !== undefined) {
-    pesoAcumulado.value += infoLogica.peso;
-    console.log(`Peso acumulado no bloco: ${pesoAcumulado.value}`);
+const calcularEquacao = (pergunta) => {
+  const config = pergunta.configuracao;
+  const valoresParaCalculo = {};
+
+  // 1. Mapeamos os IDs Internos para os símbolos da fórmula (P, h, S...)
+  config.variaveis.forEach(v => {
+    let valorFinal;
+    const respostaBruta = respostas.value[v.idInterno];
+    console.log("RESPOSTA BRUTA: ", respostaBruta)
+
+    // Se a variável tem opções (ex: Masculino = 1), mapeamos o valor
+    if (v.opcoes && v.opcoes.length > 0) {
+      const opcaoResposta = respostaBruta.opcao;
+      const opcaoEncontrada = v.opcoes.find(o => o.opcao === opcaoResposta);
+      valorFinal = opcaoEncontrada ? opcaoEncontrada.valor : 0;
+    } else {
+      // Se for apenas um número (Peso, Idade), usamos direto
+      valorFinal = Number(respostaBruta);
+    }
+
+    valoresParaCalculo[v.variavel] = valorFinal;
+  });
+
+  try {
+    const fn = evaluatex(config.equacao);
+    const resultado = fn(valoresParaCalculo);
+    
+    return resultado.toFixed(2);
+  } catch (err) {
+    console.error("Erro na equação:", err);
+    return;
   }
+};
 
-  // Chamar o motor de navegação para decidir o próximo passo
-  processarNavegacao(infoLogica);
+// Função para renderizar o LaTeX para HTML
+const renderizarFormula = (formula) => {
+  try {
+    // katex é global por causa do script no index.html
+    return window.katex.renderToString(formula, {
+      throwOnError: false,
+      displayMode: true // Deixa a fórmula centralizada e maior
+    });
+  } catch (err) {
+    return formula;
+  }
+};
+
+// Função auxiliar para pegar o valor real que será usado
+const obterValorVariavel = (v) => {
+  let respostaBruta = respostas.value[v.idInterno];
+  console.log("VAR ", respostaBruta)
+  if (v.opcoes && v.opcoes.length > 0) {
+    respostaBruta = respostaBruta.opcao;
+    const opt = v.opcoes.find(o => o.opcao === respostaBruta);
+    console.log("OPCOES ", v.opcoes)
+    console.log("OPT ", opt)
+    return opt ? opt.valor : 0;
+  }
+  return respostaBruta || 0;
 };
 
 onMounted(carregarDados)
@@ -257,6 +323,35 @@ onMounted(carregarDados)
         <p>O peso acumulado foi:</p>
         <div class="valor-destaque">{{ pesoAcumulado }}</div>
       </div>
+
+      <div v-if="pergunta.tipo === 'equacao'" class="container-equacao">
+      <div class="quadro-formula" v-html="renderizarFormula(pergunta.configuracao.equacao)"></div>
+
+      <div class="detalhes-calculo">
+        <h4>Valores das Variáveis:</h4>
+        <table class="tabela-variaveis">
+          <thead>
+            <tr>
+              <th>Símbolo</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="v in pergunta.configuracao.variaveis" :key="v.variavel">
+              <td class="simbolo">{{ v.variavel }}</td>
+              <td>{{ v.idInterno.replace('idp_', '').toUpperCase() }}</td>
+              <td class="valor-num">{{ obterValorVariavel(v) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="resultado-box">
+          <span>Resultado Calculado:</span>
+          <span class="resultado-valor">{{ calcularEquacao(pergunta) }}</span>
+        </div>
+      </div>
+    </div>
 </div>
 
 <div class="acoes-navegacao">
@@ -275,4 +370,24 @@ onMounted(carregarDados)
 .campo-identificacao { margin-bottom: 20px; display: flex; flex-direction: column; }
 .campo-identificacao label { font-weight: bold; margin-bottom: 5px; }
 .btn-continuar { margin-top: 20px; padding: 10px 20px; cursor: pointer; background: #2c3e50; color: white; border: none; }
+
+.tabela-variaveis {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 0.9em;
+}
+
+.tabela-variaveis th, .tabela-variaveis td {
+  border-bottom: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.simbolo { font-weight: bold; color: #2980b9; font-family: 'Times New Roman', serif; }
+.valor-num { font-family: monospace; font-weight: bold; }
+
+.resultado-valor {
+    font-size: 1.4em;
+  }
 </style>
