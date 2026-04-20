@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import QuestionarioView from '../views/QuestionarioView.vue'
+import CriacaoQuestionarioView from '@/views/CriacaoQuestionarioView.vue'
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +17,11 @@ const router = createRouter({
       path: '/questionario/:id',
       name: 'questionario',
       component: QuestionarioView
+    },
+    {
+      path: '/criacao-questionario',
+      name: 'criacao-questionario',
+      component: CriacaoQuestionarioView
     }
   ]
 })
