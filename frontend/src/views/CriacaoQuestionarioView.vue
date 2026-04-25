@@ -71,6 +71,19 @@
               <option value="equacao">Equação</option>
             </select>
           </div>
+          <div v-if="
+                pergunta.tipo === 'texto' ||
+                pergunta.tipo === 'numero' ||
+                pergunta.tipo === 'equacao'
+                " class="campo"
+          >
+            <label>Peso da resposta:</label>
+            <input
+              v-model.number="pergunta.pesoResposta"
+              type="number"
+              placeholder="Digite o peso da resposta"
+            />
+          </div>
 
           <div
             v-if="
@@ -92,9 +105,9 @@
                 placeholder="Texto da opção"
               />
               <input
-                v-model.number="opcao.peso"
+                v-model.number="opcao.pesoDaopcao"
                 type="number"
-                placeholder="Peso"
+                placeholder="Peso da opção"
               />
               <button
                 class="danger"
@@ -219,6 +232,7 @@ export default {
         id: this.proximaPerguntaId++,
         texto: "",
         tipo: "texto",
+        pesoResposta: 0,
         opcoes: [],
         equacao: "",
         variaveis: []
@@ -259,22 +273,35 @@ export default {
       ].variaveis.splice(variavelIndex, 1)
     },
 
-    salvarQuestionario() {
-      const payload = JSON.stringify(this.questionario, null, 2)
-      this.jsonGerado = payload
+    async salvarQuestionario() {
+      try {
+        const payload = JSON.stringify(this.questionario, null, 2)
+        this.jsonGerado = payload
 
-      console.log("JSON enviado:", payload)
+        console.log("JSON enviado:", payload)              
+        
+        const response = await fetch("http://localhost:3000/api/questionarios", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(this.questionario) // envia objeto
+        })
 
-      /*
-      Exemplo para enviar ao backend:
-      fetch("http://localhost:3000/questionarios", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: payload
-      })
-      */
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.erro || "Erro ao salvar")
+        }
+
+        console.log("Resposta do backend:", data)
+
+        alert("Questionário salvo com sucesso!")
+
+      } catch (error) {
+        console.error("Erro:", error)
+        alert("Erro ao salvar questionário")
+      }
     }
   }
 }
