@@ -99,7 +99,7 @@ export default {
       return true
     },
 
-    fazerLogin() {
+    async fazerLogin() {
       if (!this.cpf || !this.perfil) {
         alert("Preencha todos os campos.")
         return
@@ -112,25 +112,76 @@ export default {
         return
       }
 
-      const usuarioLogado = {
-        cpf: this.cpf,
-        perfil: this.perfil
-      }
+      try {
+        const resposta = await fetch(
+          "http://localhost:3000/auth/login",
+          {
+            method: "POST",
 
-      localStorage.setItem(
-        "usuarioLogado",
-        JSON.stringify(usuarioLogado)
-      )
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-      if (this.perfil === "administrador") {
-        this.$router.push("/administrador")
-      } else if (this.perfil === "coordenador") {
-        this.$router.push("/coordenador")
-      } else if (this.perfil === "monitor") {
-        this.$router.push("/monitor")
+            body: JSON.stringify({
+              cpf: this.cpf,
+              perfil: this.perfil
+            })
+          }
+        )
+
+        const dados = await resposta.json()
+
+        if (!resposta.ok) {
+          alert(
+            dados.erro ||
+              "Erro ao fazer login."
+          )
+
+          return
+        }
+
+        localStorage.setItem(
+          "usuarioLogado",
+          JSON.stringify(dados)
+        )
+
+        if (
+          dados.perfil ===
+          "administrador"
+        ) {
+          this.$router.push(
+            "/administrador"
+          )
+        }
+
+        else if (
+          dados.perfil ===
+          "coordenador"
+        ) {
+          this.$router.push(
+            "/coordenador"
+          )
+        }
+
+        else if (
+          dados.perfil ===
+          "monitor"
+        ) {
+          this.$router.push(
+            "/monitor"
+          )
+        }
+
+      } catch (erro) {
+        console.log(erro)
+
+        alert(
+          "Erro ao conectar com o servidor."
+        )
       }
     }
-  }
+  }    
 }
 </script>
 
