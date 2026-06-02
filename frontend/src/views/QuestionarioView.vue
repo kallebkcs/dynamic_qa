@@ -9,20 +9,20 @@ const questionario = ref(null)
 const carregando = ref(true)
 
 // Localização
-const idBlocoAtivo = ref(null)
-const idPerguntaAtiva = ref(null)
+const uidBlocoAtivo = ref(null)
+const uidPerguntaAtiva = ref(null)
 
 // Memória do Questionário
 const respostas = ref({})
-const pesoAcumulado = ref(0) // Para blocos do tipo "peso"
+const pesoAcumulado = ref(0)
 
 // Getters
 const blocoAtual = computed(() => 
-  questionario.value?.blocos.find(b => b.idInterno === idBlocoAtivo.value)
+  questionario.value?.blocos.find(b => b.uid === uidBlocoAtivo.value)
 )
 
 const perguntaAtual = computed(() => 
-  blocoAtual.value?.perguntas.find(p => p.idInterno === idPerguntaAtiva.value)
+  blocoAtual.value?.perguntas.find(p => p.uid === uidPerguntaAtiva.value)
 )
 
 // Lógica de carregamento de dados
@@ -35,11 +35,11 @@ const carregarDados = async () => {
     questionario.value = dados
 
     // Define o bloco inicial conforme definido no questionário 
-    idBlocoAtivo.value = dados.primeiro 
-    
+    uidBlocoAtivo.value = dados.primeiro
+
     // Define a pergunta inicial conforme definido no bloco
     if (blocoAtual.value) {
-      idPerguntaAtiva.value = blocoAtual.value.primeiro
+      uidPerguntaAtiva.value = blocoAtual.value.primeiro
     }
 
   } catch (error) {
@@ -50,136 +50,129 @@ const carregarDados = async () => {
 }
 
 // Redirecionador
-const redirecionador = (config) => {
-  // Pegamos o objeto 'proximo' da configuração
-  const destino = config.proximo;
+const redirecionador = (destino) => {
+  if (destino === 'calculoPeso') {
+    const calc = blocoAtual.value.calculoPeso;
+    let atendeRegra;
 
-  // CASO A: Próxima Pergunta (String simples) 
-  if (typeof destino === 'string') {
-    idPerguntaAtiva.value = destino;
-    return;
+    switch (calc.regra) {
+      case 'maior_que':
+        atendeRegra = pesoAcumulado.value > calc.limiar;
+        break;
+      case 'menor_que':
+        atendeRegra = pesoAcumulado.value < calc.limiar;
+        break;
+      default:
+        atendeRegra = pesoAcumulado.value == calc.limiar; 
+    }
+    destino = atendeRegra ? calc.verdadeiro.proximo : calc.falso.proximo;
   }
 
-  // CASO B: Objeto (Fim de Bloco ou Fim de Questionário) 
+  // se string, é o uid direto
+  if (typeof destino === 'string') {
+    uidPerguntaAtiva.value = destino;
+    return;
+  }
+  // se objeto, vai para outro bloco ou finaliza questionário
   if (typeof destino === 'object' && destino !== null) {
-    
-    // CASO B.1: Fim de Questionário (Objeto dentro de Objeto com 'diagnostico')
+    // Fim de questionário: paciente tem diagnóstico
     if (typeof destino.proximo === 'object' && destino.proximo.diagnostico) {
-      alert(destino.proximo.diagnostico)//finalizarQuestionario(destino.proximo.diagnostico);
+      alert("Diagnóstico: " + destino.proximo.diagnostico);//Finalizar questionário
       return;
     }
 
-    // CASO B.2: Fim de Bloco (Objeto com 'proximo' apontando para ID de bloco)
+    // Pulo de Bloco: O proximo aponta para o UID do próximo bloco
     if (typeof destino.proximo === 'string') {
-      idBlocoAtivo.value = destino.proximo;
+      uidBlocoAtivo.value = destino.proximo;
       
-      // Ao trocar o bloco, precisamos resetar para a primeira pergunta do novo bloco
       if (blocoAtual.value) {
-        idPerguntaAtiva.value = blocoAtual.value.primeiro;
+        uidPerguntaAtiva.value = blocoAtual.value.primeiro;
+        pesoAcumulado.value = 0;
       }
       return;
     }
   }
-
+  
   console.error("Caminho de navegação não identificado para:", destino);
 };
 
 const resolverLogica = (pergunta) => {
-  // Começamos com a configuração bruta do banco de dados
-  let configEfetiva = pergunta.configuracao; 
-  // Primeiramente, trata o tipo equação, que será o único diferente
-  if (pergunta.tipo === "equacao") configEfetiva = configEfetiva.condicional;
+  let destinoFinal = null;
+  const respostaDada = respostas.value[pergunta.uid]; 
 
-  // CONTEXTO: Se a pergunta depende de uma resposta anterior
-  if (pergunta.contexto) {
-
-    // Buscamos a pergunta que serve de contexto para saber o TIPO dela
-    const perguntaContexto = questionario.value.blocos
-        .find(b => b.idInterno === "idp").perguntas
-        .find(p => p.idInterno === pergunta.contexto);
-    console.log("PERGUNTA CONTEXTO: ", perguntaContexto) 
-
-    const valorContexto = respostas.value[pergunta.contexto];
-    console.log("VALOR CONTEXTO: ", valorContexto)
-
-    if (perguntaContexto.tipo === 'escolha_unica') {
-      console.log("CONFIG EFETIVA PRÉ FILTRO: ", configEfetiva)
-      const termoParaBusca = typeof valorContexto === 'object' ? valorContexto.opcao : valorContexto;
-      console.log("TERMO PARA BUSCA: ", termoParaBusca)
-      const itemConfig = configEfetiva.find(c => c.opcao === termoParaBusca);
-      configEfetiva = itemConfig?.escolhido || configEfetiva;
-      console.log("CONFIG EFETIVA PÓS FILTRO: ", configEfetiva)
+  // --- PARTE A: SOMATÓRIA DE PESO (Apenas se o bloco for tipo 'peso') ---
+  if (blocoAtual.value?.tipo === 'peso') {
+    if (pergunta.tipo === 'escolha_unica') {
+      // Nota: A semente nova tem "escolhido.peso", mas o nosso criador salva só "peso" direto. 
+      // Aceitei os dois aqui pra não quebrar a sua semente gerada.
+      const op = pergunta.configuracao.find(c => c.opcao === respostaDada?.opcao || c.opcao === respostaDada);
+      const valorPeso = op?.peso ?? op?.escolhido?.peso ?? 0;
+      pesoAcumulado.value += Number(valorPeso);
     } 
-    else if (perguntaContexto.tipo === 'numerico') {
-      // TODO: TESTAR
-      const itemConfig = configEfetiva.find(c => avaliarRegra(c, valorContexto));
-      configEfetiva = itemConfig?.escolhido || configEfetiva;
+    else if (pergunta.tipo === 'numerico') {
+      // Resolve limiar com dicionário de contexto (Uma maravilha comparado ao que era)
+      let limiar = pergunta.configuracao.limiar;
+      if (pergunta.contexto && typeof limiar === 'object') {
+        const respContexto = respostas.value[pergunta.contexto];
+        const chave = typeof respContexto === 'object' ? respContexto.opcao : respContexto;
+        limiar = limiar[chave];
+      }
+      const atende = (pergunta.configuracao.regra === 'maior_que') 
+        ? Number(respostaDada) > limiar 
+        : Number(respostaDada) < limiar;
+        
+      const alvo = atende ? pergunta.configuracao.verdadeiro : pergunta.configuracao.falso;
+      pesoAcumulado.value += Number(alvo?.peso ?? 0);
     }
   }
-  let logicaFinal = null;
 
-  // CASO: Perguntas Numéricas
-  if (pergunta.tipo === 'numerico' || pergunta.tipo === 'calculoPeso' || pergunta.tipo === 'equacao') {
-    // Escolhe o valor: ou o digitado no input, ou o acumulado do bloco de peso
-    let valorParaComparar;
-    switch (pergunta.tipo) {
-      case 'numerico':
-        valorParaComparar = respostas.value[pergunta.idInterno];
-        break;
-      case 'calculoPeso':
-        valorParaComparar = pesoAcumulado.value;
-        break;
-      case 'equacao':
-        valorParaComparar = calcularEquacao(pergunta);
-        break;
-    }
-    console.log(valorParaComparar)  
-
-    const atendeRegra = (configEfetiva.regra === 'maior_que')
-      ? valorParaComparar > configEfetiva.limiar
-      : valorParaComparar < configEfetiva.limiar;
-    console.log("VALOR PARA COMPARAR: ", valorParaComparar, " ATENDE REGRA? ", atendeRegra, configEfetiva)
-    logicaFinal = atendeRegra ? configEfetiva.verdadeiro : configEfetiva.falso;
+  // --- PARTE B: DEFINIÇÃO DA ROTA ---
+  // Se a rota está fixa na raiz (Ex: Blocos de identificação e peso)
+  if (pergunta.proximo) {
+    destinoFinal = pergunta.proximo;
   } 
-  
-  // CASO: Escolha Única
-  else if (pergunta.tipo === 'escolha_unica') {
-    const opcaoSelecionada = respostas.value[pergunta.idInterno];
-    logicaFinal = opcaoSelecionada.escolhido || opcaoSelecionada;
+  // Se a rota está na opção escolhida (Bloco comum)
+  else {
+    if (pergunta.tipo === 'escolha_unica') {
+      const op = pergunta.configuracao.find(c => c.opcao === respostaDada?.opcao || c.opcao === respostaDada);
+      destinoFinal = op?.escolhido?.proximo ?? op?.proximo;
+    } 
+    else if (pergunta.tipo === 'numerico' || pergunta.tipo === 'equacao') {
+      const valorAvaliado = (pergunta.tipo === 'equacao') ? calcularEquacao(pergunta) : respostaDada;
+      
+      let limiar = pergunta.configuracao.limiar;
+      if (pergunta.contexto && typeof limiar === 'object') {
+        const respContexto = respostas.value[pergunta.contexto];
+        const chave = typeof respContexto === 'object' ? respContexto.opcao : respContexto;
+        limiar = limiar[chave];
+      }
+
+      const atende = (pergunta.configuracao.regra === 'maior_que') 
+        ? Number(valorAvaliado) > limiar 
+        : Number(valorAvaliado) < limiar;
+
+      const alvo = atende ? pergunta.configuracao.verdadeiro : pergunta.configuracao.falso;
+      destinoFinal = alvo?.proximo;
+    }
   }
 
-  // Se a lógica da pergunta for 'peso', somamos o valor ao totalizador
-  if (pergunta.logica === 'peso' && logicaFinal?.peso !== undefined) {
-    pesoAcumulado.value += logicaFinal.peso;
-    console.log(`Peso somado! Total agora: ${pesoAcumulado.value}`);
-  }
-
-  // Retornamos apenas o pedaço que contém o atributo 'proximo' para o redirecionador
-  console.log(logicaFinal)
-  return logicaFinal;
+  return destinoFinal;
 };
 
 const proximoPasso = () => {
-  let logicaParaRedirecionar = null;
-
-  // CASO 1: Bloco de Identificação (Várias perguntas na tela) 
-  if (blocoAtual.value?.tipo === 'identificacao') {
-    // Procuramos qual pergunta deste bloco contém a "saída" (o objeto proximo)
-    const perguntaDeSaida = blocoAtual.value.perguntas.find(p => 
-      typeof p.configuracao.proximo === 'object'
-    );
-    logicaParaRedirecionar = perguntaDeSaida.configuracao;
-  } 
+  let destinoDoPasso = null;
   
-  // CASO 2: Perguntas Individuais (Fluxo normal)
+  // CASO 1: Identificação mostra tudo de uma vez. Ignoramos as rotas internas e pegamos a pergunta que cospe o usuário pra fora do bloco.
+  if (blocoAtual.value?.tipo === 'identificacao') {
+    const perguntaDeSaida = blocoAtual.value.perguntas.find(p => typeof p.proximo === 'object');
+    console.log(blocoAtual.value.perguntas);
+    destinoDoPasso = perguntaDeSaida?.proximo;
+  } 
+  // CASO 2: Fluxo normal um por um
   else if (perguntaAtual.value) {
-    logicaParaRedirecionar = resolverLogica(perguntaAtual.value);
+    destinoDoPasso = resolverLogica(perguntaAtual.value);
   }
-
-  // Com o destino resolvido, chamamos o Redirecionador
-  if (logicaParaRedirecionar) {
-    redirecionador(logicaParaRedirecionar);
-  }
+  if (destinoDoPasso) redirecionador(destinoDoPasso);
 };
 
 const perguntasExibidas = computed(() => {
@@ -192,7 +185,7 @@ const perguntasExibidas = computed(() => {
 });
 
 const estaRespondida = (pergunta) => {
-  const valor = respostas.value[pergunta.idInterno];
+  const valor = respostas.value[pergunta.uid];
 
   // Regras baseadas no tipo da pergunta
   switch (pergunta.tipo) {
@@ -220,69 +213,71 @@ const podeAvancar = computed(() => {
 });
 
 ///////////////////////////////////////////////////////
-/////// EQUAÇÕES /////////////////////////////////////
-/////////////////////////////////////////////////////
+////////////////// EQUAÇÕES ///////////////////////////
+///////////////////////////////////////////////////////
 import evaluatex from 'evaluatex';
 
 const calcularEquacao = (pergunta) => {
-  const config = pergunta.configuracao;
   const valoresParaCalculo = {};
 
-  // 1. Mapeamos os IDs Internos para os símbolos da fórmula (P, h, S...)
-  config.variaveis.forEach(v => {
-    let valorFinal;
-    const respostaBruta = respostas.value[v.idInterno];
-    console.log("RESPOSTA BRUTA: ", respostaBruta)
+  // Proteção básica para não quebrar se a estrutura não existir
+  if (!pergunta.variaveis || !pergunta.equacao) return 0;
 
-    // Se a variável tem opções (ex: Masculino = 1), mapeamos o valor
-    if (v.opcoes && v.opcoes.length > 0) {
-      const opcaoResposta = respostaBruta.opcao;
-      const opcaoEncontrada = v.opcoes.find(o => o.opcao === opcaoResposta);
-      valorFinal = opcaoEncontrada ? opcaoEncontrada.valor : 0;
+  pergunta.variaveis.forEach(v => {
+    let valorFinal = 0;
+    // Lemos a resposta pelo UID da variável
+    const respostaBruta = respostas.value[v.uid];
+
+    // Se a variável tem um mapeamento definido e ele não é vazio
+    if (v.mapeamento && Object.keys(v.mapeamento).length > 0) {
+      const chave = typeof respostaBruta === 'object' ? respostaBruta.opcao : respostaBruta;
+      // Pega o valor no dicionário. Se não achar, assume 0 pra não dar NaN na fórmula
+      valorFinal = v.mapeamento[chave] ?? 0;
     } else {
-      // Se for apenas um número (Peso, Idade), usamos direto
-      valorFinal = Number(respostaBruta);
+      // Se não tem mapeamento, é um input numérico direto
+      valorFinal = Number(respostaBruta) || 0;
     }
 
     valoresParaCalculo[v.variavel] = valorFinal;
   });
 
   try {
-    const fn = evaluatex(config.equacao);
+    const fn = evaluatex(pergunta.equacao);
     const resultado = fn(valoresParaCalculo);
-    
     return resultado.toFixed(2);
   } catch (err) {
     console.error("Erro na equação:", err);
-    return;
+    return "Erro";
   }
 };
 
-// Função para renderizar o LaTeX para HTML
+const obterValorVariavel = (v) => {
+  let respostaBruta = respostas.value[v.uid];
+  if (v.mapeamento && Object.keys(v.mapeamento).length > 0) {
+    const chave = typeof respostaBruta === 'object' ? respostaBruta.opcao : respostaBruta;
+    return v.mapeamento[chave] ?? 0;
+  }
+  return respostaBruta || 0;
+};
+
+// Caçador de IDs: transforma aquele UID feio no idInterno amigável para mostrar na tabela
+const obterNomeVariavel = (uidBusca) => {
+  for (const bloco of questionario.value.blocos) {
+    const pEncontrada = bloco.perguntas.find(p => p.uid === uidBusca);
+    if (pEncontrada) return pEncontrada.idInterno || pEncontrada.escopo;
+  }
+  return uidBusca; // Fallback caso o universo entre em colapso
+};
+
 const renderizarFormula = (formula) => {
   try {
-    // katex é global por causa do script no index.html
     return window.katex.renderToString(formula, {
       throwOnError: false,
-      displayMode: true // Deixa a fórmula centralizada e maior
+      displayMode: true
     });
   } catch (err) {
     return formula;
   }
-};
-
-// Função auxiliar para pegar o valor real que será usado
-const obterValorVariavel = (v) => {
-  let respostaBruta = respostas.value[v.idInterno];
-  console.log("VAR ", respostaBruta)
-  if (v.opcoes && v.opcoes.length > 0) {
-    respostaBruta = respostaBruta.opcao;
-    const opt = v.opcoes.find(o => o.opcao === respostaBruta);
-    console.log("OPCOES ", v.opcoes)
-    console.log("OPT ", opt)
-    return opt ? opt.valor : 0;
-  }
-  return respostaBruta || 0;
 };
 
 onMounted(carregarDados)
@@ -290,7 +285,6 @@ onMounted(carregarDados)
 
 <template>
   <div v-if="carregando">Carregando questionário...</div>
-  
   <main v-else-if="questionario" class="visualizer">
   <header v-if="blocoAtual">
     <h1>{{ questionario.titulo }}</h1>
@@ -303,18 +297,18 @@ onMounted(carregarDados)
 
       <input v-if="pergunta.tipo === 'texto'" 
              type="text" 
-             v-model="respostas[pergunta.idInterno]" />
+             v-model="respostas[pergunta.uid]" />
 
       <input v-else-if="pergunta.tipo === 'numerico'" 
              type="number" 
-             v-model.number="respostas[pergunta.idInterno]" />
+             v-model.number="respostas[pergunta.uid]" />
 
       <div v-else-if="pergunta.tipo === 'escolha_unica'" class="lista-opcoes">
         <div v-for="opt in pergunta.configuracao" :key="opt.opcao" class="opcao-item">
           <input type="radio" 
                  :id="pergunta.idInterno + opt.opcao" 
                  :value="opt" 
-                 v-model="respostas[pergunta.idInterno]" />
+                 v-model="respostas[pergunta.uid]" />
           <label :for="pergunta.idInterno + opt.opcao">{{ opt.opcao }}</label>
         </div>
       </div>
@@ -325,33 +319,33 @@ onMounted(carregarDados)
       </div>
 
       <div v-if="pergunta.tipo === 'equacao'" class="container-equacao">
-      <div class="quadro-formula" v-html="renderizarFormula(pergunta.configuracao.equacao)"></div>
+        <div class="quadro-formula" v-html="renderizarFormula(pergunta.equacao)"></div>
 
-      <div class="detalhes-calculo">
-        <h4>Valores das Variáveis:</h4>
-        <table class="tabela-variaveis">
-          <thead>
-            <tr>
-              <th>Símbolo</th>
-              <th>Descrição</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="v in pergunta.configuracao.variaveis" :key="v.variavel">
-              <td class="simbolo">{{ v.variavel }}</td>
-              <td>{{ v.idInterno.replace('idp_', '').toUpperCase() }}</td>
-              <td class="valor-num">{{ obterValorVariavel(v) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="detalhes-calculo">
+          <h4>Valores das Variáveis:</h4>
+          <table class="tabela-variaveis">
+            <thead>
+              <tr>
+                <th>Símbolo</th>
+                <th>Origem</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in pergunta.variaveis" :key="v.variavel">
+                <td class="simbolo">{{ v.variavel }}</td>
+                <td>{{ obterNomeVariavel(v.uid) }}</td>
+                <td class="valor-num">{{ obterValorVariavel(v) }}</td>
+              </tr>
+            </tbody>
+          </table>
 
-        <div class="resultado-box">
-          <span>Resultado Calculado:</span>
-          <span class="resultado-valor">{{ calcularEquacao(pergunta) }}</span>
+          <div class="resultado-box">
+            <span>Resultado Calculado:</span>
+            <span class="resultado-valor">{{ calcularEquacao(pergunta) }}</span>
+          </div>
         </div>
       </div>
-    </div>
 </div>
 
 <div class="acoes-navegacao">

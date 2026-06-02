@@ -2,22 +2,25 @@
 const mongoose = require('mongoose');
 
 const perguntaSchema = new mongoose.Schema({
+    uid: String,
     idInterno: String,
     escopo: String,
     tipo: String,
-    logica: String,
     contexto: String,
-    configuracao: {
-        type: mongoose.Schema.Types.Mixed,
-        required: true
-    }
+    proximo: mongoose.Schema.Types.Mixed,
+    equacao: String,
+    variaveis: [mongoose.Schema.Types.Mixed],
+    configuracao: mongoose.Schema.Types.Mixed
+    
 });
 
 const blocoSchema = new mongoose.Schema({
+    uid: String,
     idInterno: String,
     titulo: String,
     tipo: String,
     primeiro: String,
+    calculoPeso: mongoose.Schema.Types.Mixed,
     perguntas: [perguntaSchema]
 })
 
