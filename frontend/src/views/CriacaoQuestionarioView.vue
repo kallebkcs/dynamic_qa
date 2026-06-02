@@ -11,12 +11,13 @@
     <section class="formulario">
       <div class="campo">
         <label>Título do Questionário:</label>
-        <input v-model="questionario.titulo" type="text" placeholder="Ex: Sarcopenia" />
+        <input v-model="questionario.titulo" type="text"/>
       </div>
 
       <div class="campo">
         <label>Identificador:</label>
-        <input v-model="questionario.idInterno" type="text" placeholder="ex: sarcopenia_v1" />
+        <input v-model="questionario.idInterno" type="text"/>
+        <small style="color: #666;">Apenas letras, números e underscore (_).</small>
       </div>
 
       <div class="campo">
@@ -25,7 +26,7 @@
       </div>
     </section>
 
-    <!-- TODO: Criado por deve ser definido após lógica de login -->
+    <!-- TODO: "Criado por" deve ser definido após lógica de login -->
 
     <!-- O resto do template segue a mesma lógica de v-for, usando questionario.blocos -->
     <section class="blocos">
@@ -33,241 +34,123 @@
         <div class="bloco-topo">
            <div class="campo">
             <label>Título</label>
-            <input v-model="bloco.titulo" type="text" placeholder="Ex: Avaliação de Força"/>
+            <input v-model="bloco.titulo" type="text"/>
            </div>
            <!--Talvez não seja necessário um campo de identificação e podemos gerar automaticamente-->
            <div class="campo">
             <label>Identificador</label>
-            <input v-model="bloco.idInterno" type="text" placeholder="Ex: avaliacao_forca"/>
+            <input v-model="bloco.idInterno" type="text"/>
+            <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
            <div class="campo">
             <label>Tipo de Bloco</label>
-            <select v-model="bloco.tipo" @change="ajustarPerguntasPorTipoDeBloco">
+            <select v-model="bloco.tipo" @change="mudancaBloco(bloco)" :disabled="bloco.tipo === 'identificacao'">
              <option value="comum">Comum</option>
-             <option value="identificacao">Identificação</option>
+             <option v-if="bloco.tipo === 'identificacao'" value="identificacao">Identificação</option>
              <option value="peso">Pesos</option>
            </select>
            </div>
            
            <div class="acoes">
-            <button 
-              type="button"
-              :class="['btn-estrela', { 'ativo': questionario.primeiro === bloco.uid }]"
-              @click="questionario.primeiro = bloco.uid"
-              title="Definir como bloco inicial"
-            >
-              {{ questionario.primeiro === bloco.uid ? '★ Primeiro' : '☆ Definir como primeiro' }}
-            </button>
-            <button class="danger" @click="removerBloco(bIdx)">Excluir</button>
+           <button class="danger" @click="removerBloco(bIdx)" v-if="bloco.tipo !== 'identificacao'">Excluir</button>
           </div>
         </div>
 
         <div v-for="(p, pIdx) in bloco.perguntas" :key="p.uid" class="pergunta">
            <div class="campo">
             <label>Identificador</label>
-            <input v-model="p.idInterno" placeholder="Ex: numero_quedas" />
+            <input v-model="p.idInterno"/>
+            <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
+
            <div class="campo">
             <label>Escopo da Pergunta</label>
-            <input v-model="p.escopo" placeholder="Ex: Quantas vezes o paciente caiu no último ano?" />
+            <input v-model="p.escopo" placeholder="Como vai seu dia?"/>
            </div>
+
            <div class="campo">
             <label>Tipo de dados</label>
             <select v-model="p.tipo" @change="mudaConfigPorTipo(p)">
               <option v-if="bloco.tipo === 'identificacao'" value="texto">Texto</option>
               <option value="numerico">Numérico</option>
               <option v-if="!p.temContexto" value="escolha_unica">Escolha Única</option>
-              <option value="equacao">Equação</option>
+              <option v-if="bloco.tipo !== 'identificacao'" value="equacao">Equação</option>
             </select>           
            </div>
-           <div class="campo">
-            <label>Lógica da pergunta</label>
-            <select v-model="p.logica">
-            <!-- Se for identificação ou peso, mostra apenas a opção fixa -->
-            <option v-if="bloco.tipo === 'identificacao'" value="identificacao">Identificação</option>
-            <option v-if="bloco.tipo === 'peso'" value="peso">Acúmulo de Peso</option>
 
-            <!-- Lógicas normais para blocos comuns -->
-            <template v-if="bloco.tipo === 'comum'">
-              <option value="redirecionamento">Redirecionamento Simples</option>
-              <option value="diagnostico">Fim de Questionário (Diagnóstico)</option>
-            </template>
-          </select>          
-           </div>
+           <!-- Contexto  -->
            <div v-if="bloco.tipo !== 'identificacao'" class="sessao-condicional">
             <label class="checkbox-label">
               <input type="checkbox" v-model="p.temContexto" @change="() => {if (p.tipo === 'escolha_unica') p.tipo = '' }" />
               Possui contexto condicional?
             </label>
 
-            <!-- Contexto -->
             <div v-if="p.temContexto" class="campo">
               <label>Selecione a pergunta de Identificação:</label>
               <select v-model="p.contexto">
-                <option value="">-- Escolha um contexto --</option>
-                <!-- No futuro, faremos um loop aqui das perguntas de identificação -->
-                <option value="idp_sexo">Sexo (Exemplo)</option>
+                <option value="" disabled>-- Escolha um contexto --</option>
+                <option v-for="ctx in perguntasContexto" :key="ctx.uid" :value="ctx.uid">{{ ctx.escopo || ctx.idInterno }} ({{ ctx.idInterno }})</option>
               </select>
             </div>
+          </div>
 
-            <!-- Tipo numérico -->
-            <div v-if="p.tipo === 'numerico' && bloco.tipo !== 'identificacao' && !p.temContexto" class="campo">
-              <div class="condicional">
-                <span>Se o valor for </span>
-                <select v-model="p.configuracao[0].regra">
-                  <option value="maior_que">maior que</option>
-                  <option value="menor_que">menor que</option>
-                  <option value="igual_a">igual a</option>
-                </select>
-                <input type="number" v-model.number="p.configuracao[0].limiar" placeholder="valor"/>
-                <span>, então:</span>
-              </div>
-              <div>
-                <div>
-                  <span>Ação:</span>
-                  
-                  <!-- <select v-model="p.configuracao.verdadeiro.acao" class="input-inline">
-                    <option value="proxima">ir para a próxima pergunta</option>
-                    <option value="bloco">saltar para o bloco</option>
-                    <option value="diagnostico">finalizar com diagnóstico</option>
-                  </select>
-                  
-                  <select 
-                    v-if="p.configuracao.verdadeiro.acao === 'bloco'" 
-                    v-model="p.configuracao.verdadeiro.destinoId"
-                    class="input-inline"
-                  >
-                    <option v-for="b in questionario.blocos" :key="b.tempUid" :value="b.tempUid">
-                      {{ b.identificador }}
-                    </option>
-                  </select> -->
-                </div>
-              </div>
-              <div>
-                <span>se não, então:</span>
-              </div>
-              <div>
-                <div>
-                  <span>Ação:</span>
-                  <!--
-                  <select v-model="p.configuracao.falso.acao" class="input-inline">
-                    <option value="proxima">ir para a próxima pergunta</option>
-                    <option value="bloco">saltar para o bloco</option>
-                    <option value="diagnostico">finalizar com diagnóstico</option>
-                  </select>
-                  <select 
-                    v-if="p.configuracao.falso.acao === 'bloco'" 
-                    v-model="p.configuracao.falso.destinoId"
-                    class="input-inline"
-                  >
-                    <option v-for="b in questionario.blocos" :key="b.tempUid" :value="b.tempUid">
-                      {{ b.identificador }}
-                    </option>
-                  </select>
-                  -->
-                </div>
-              </div>
-            </div>
+          <!-- Tipo texto -->
+          <div v-if="p.tipo === 'texto'">
+            <BlocoLogica
+              :destino="p"
+              :tipoLogica="bloco.tipo"
+              :perguntasDoBloco="questionario.blocos[bIdx].perguntas"
+              :blocosDisponiveis="questionario.blocos"
+              :uidPerguntaAtual="p.uid"
+              :uidBlocoAtual="bloco.uid"
+              @criar-pergunta="(identificador) => adicionarPergunta(bIdx, identificador)"
+              @criar-bloco="(identificador) => adicionarBloco(identificador)"
+            />
+          </div>  
 
-            <!-- Escolha Única -->
-            <div v-if="p.tipo === 'escolha_unica'" class="opcoes">
-              <h4>Opções</h4>
+          <!-- Tipo numérico -->
+          <TipoNumerico 
+            v-if="p.tipo === 'numerico' && p.configuracao.length > 0 && 'regra' in p.configuracao[0]""
+            :key="'num_' + p.uid + '_' + p.tipo"
+            :pergunta="p" 
+            :tipoLogica="bloco.tipo"
+            :perguntasDoBloco="questionario.blocos[bIdx].perguntas"
+            :blocosDisponiveis="questionario.blocos"
+            :contexto="p.contexto"
+            :uidPerguntaAtual="p.uid"
+            :uidBlocoAtual="bloco.uid"
+            @criar-pergunta="(identificador) => adicionarPergunta(bIdx, identificador)"
+            @criar-bloco="(identificador) => adicionarBloco(identificador)"
+          /> 
+          
+          <!-- Escolha Única -->
+          <TipoEscolha 
+            v-if="p.tipo === 'escolha_unica' && p.configuracao.length > 0 && 'escolhido' in p.configuracao[0]""
+            :key="'esc_' + p.uid + '_' + p.tipo"
+            :pergunta="p" 
+            :tipoLogica="bloco.tipo"
+            :perguntasDoBloco="questionario.blocos[bIdx].perguntas"
+            :blocosDisponiveis="questionario.blocos"
+            :uidPerguntaAtual="p.uid"
+            :uidBlocoAtual="bloco.uid"
+            @criar-pergunta="(identificador) => adicionarPergunta(bIdx, identificador)"
+            @criar-bloco="(identificador) => adicionarBloco(identificador)"
+          />
 
-              <div v-for="(opcao, opIdx) in p.configuracao" :key="opIdx" class="opcao">
-                <label>Opção:</label>
-                <input v-model="opcao.opcao" type="text" placeholder="Opção"/>
-                <div v-if="bloco.tipo === 'peso'">
-                  <label>Peso:</label>
-                  <input v-model.number="opcao.escolhido.peso" type="number" placeholder="Peso"/>
-                </div>
-                
-                <button class="danger" @click="removerOpcao(bIdx, pIdx, opIdx)">Excluir opção</button>
-              </div>
-
-              <button @click="adicionarOpcao(bIdx, pIdx)">+ Adicionar opção</button>
-            </div>
-
-            <!-- Equação -->
-            <div v-if="p.tipo === 'equacao'" class="equacao-box">
-              <div class="campo">
-                <label>Equação (Em LaTeX):</label>
-                <input v-model="p.configuracao[0].equacao" type="text"/>
-              </div>
-
-              <div class="campo">
-                <label>Variáveis da equação</label>
-              </div>
-
-              <div v-for="(variavel, varIdx) in p.configuracao[0].variaveis" :key="varIdx" class="variavel-item">
-                <label>Identificador:</label>
-                <input v-model="variavel.idInterno" type="text"/>
-                <label>Variável:</label>
-                <input v-model="variavel.variavel" type="text"/>
-                <button class="danger" @click="removerVariavel(bIdx, pIdx, varIdx)">Excluir variável</button>
-              </div>
-              <button @click="adicionarVariavel(bIdx, pIdx)">+ Adicionar variável</button>
-
-              <div class="condicional">
-                <div v-if="!p.temContexto">
-                  <div>
-                    <span>Se o valor for </span>
-                    <select v-model="p.configuracao[0].condicional[0].regra">
-                      <option value="maior_que">maior que</option>
-                      <option value="menor_que">menor que</option>
-                      <option value="igual_a">igual a</option>
-                    </select>
-                    <input type="number" v-model.number="p.configuracao[0].condicional[0].limiar" placeholder="valor"/>
-                    <span>, então:</span>
-                  </div>
-                  <div>
-                    <div>
-                      <span>Ação:</span>
-                      
-                      <!-- <select v-model="p.configuracao.verdadeiro.acao" class="input-inline">
-                        <option value="proxima">ir para a próxima pergunta</option>
-                        <option value="bloco">saltar para o bloco</option>
-                        <option value="diagnostico">finalizar com diagnóstico</option>
-                      </select>
-                      
-                      <select 
-                        v-if="p.configuracao.verdadeiro.acao === 'bloco'" 
-                        v-model="p.configuracao.verdadeiro.destinoId"
-                        class="input-inline"
-                      >
-                        <option v-for="b in questionario.blocos" :key="b.tempUid" :value="b.tempUid">
-                          {{ b.identificador }}
-                        </option>
-                      </select> -->
-                    </div>
-                  </div>
-                  <div>
-                    <span>se não, então:</span>
-                  </div>
-                  <div>
-                    <div>
-                      <span>Ação:</span>
-                      <!--
-                      <select v-model="p.configuracao.falso.acao" class="input-inline">
-                        <option value="proxima">ir para a próxima pergunta</option>
-                        <option value="bloco">saltar para o bloco</option>
-                        <option value="diagnostico">finalizar com diagnóstico</option>
-                      </select>
-                      <select 
-                        v-if="p.configuracao.falso.acao === 'bloco'" 
-                        v-model="p.configuracao.falso.destinoId"
-                        class="input-inline"
-                      >
-                        <option v-for="b in questionario.blocos" :key="b.tempUid" :value="b.tempUid">
-                          {{ b.identificador }}
-                        </option>
-                      </select>
-                      -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>
+          <!-- Equação -->
+          <TipoEquacao
+            v-if="p.tipo === 'equacao' && p.configuracao.length > 0 && 'equacao' in p"
+            :key="'eq_' + p.uid + '_' + p.tipo"
+            :pergunta="p" 
+            :tipoLogica="bloco.tipo"
+            :perguntasDoBloco="questionario.blocos[bIdx].perguntas"
+            :blocosDisponiveis="questionario.blocos"
+            :contexto="p.contexto"
+            :uidPerguntaAtual="p.uid"
+            :uidBlocoAtual="bloco.uid"
+            @criar-pergunta="(identificador) => adicionarPergunta(bIdx, identificador)"
+            @criar-bloco="(identificador) => adicionarBloco(identificador)"
+          />
             
            <div class="acoes">
             <button 
@@ -280,14 +163,42 @@
             </button>
             <button class="danger" @click="removerPergunta(bIdx, pIdx)">Remover</button>
           </div>
-
-           <!-- Aqui entrarão os campos específicos de cada tipo que desenhamos -->
         </div>
 
         <button @click="adicionarPergunta(bIdx)">+ Nova Pergunta</button>
+        <!-- Perguntas pré-setadas -->
+        <div v-if="bloco.tipo === 'identificacao'">
+          <button @click="menuPresetQuestions = !menuPresetQuestions">{{ menuPresetQuestions ? 'Ocultar Perguntas de Identificação' : 'Adicionar Perguntas de Identificação' }}</button>
+          <div v-if="menuPresetQuestions">
+            <p>Selecione perguntas para adicionar ao bloco</p>
+            <label v-for="pre in presetQuestions" :key="pre.templateId">
+              <input type="checkbox" :value="pre.templateId" v-model="preSetadasSelecionadas" />
+              {{ pre.escopo }}
+            </label>
+            <button @click="injetPreset(bIdx)" :disabled="preSetadasSelecionadas.length === 0">Inserir {{ preSetadasSelecionadas.length }} pergunta(s)</button>
+          </div>
+
+           <!-- Aqui entrarão os campos específicos de cada tipo que desenhamos -->
+        </div>
+        
+        <!-- Decisão de peso -->
+        <div v-if="bloco.tipo === 'peso'&& bloco.calculoPeso">
+          <h3>Decisão de Peso:</h3>
+          <p>Defina o caminho que o questionário deve tomar baseado no peso somado deste bloco</p>
+          <TipoNumerico
+            :pergunta="bloco.calculoPeso"
+            tipoLogica="comum"
+            :perguntasDoBloco="bloco.perguntas"
+            :blocosDisponiveis="questionario.blocos"
+            :uidPerguntaAtual="bloco.calculoPeso.uid"
+            :uidBlocoAtual="bloco.uid"
+            @criar-pergunta="(identificador) => adicionarPergunta(bIdx, identificador)"
+            @criar-bloco="(identificador) => adicionarBloco(identificador)"
+          />
+        </div>
       </div>
       
-      <button class="btn-bloco" @click="adicionarBloco">+ Criar novo bloco</button>
+      <button class="btn-bloco" @click="adicionarBloco()">+ Criar novo bloco</button>
     </section>
 
     <section class="rodape-acoes">
@@ -299,15 +210,41 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import BlocoLogica from '../components/BlocoLogica.vue';
+import TipoNumerico from '../components/TipoNumerico.vue';
+import TipoEscolha from '../components/TipoEscolha.vue';
+import TipoEquacao from '../components/TipoEquacao.vue';
+import { presetQuestions } from '../utils/presetQuestions.js';
 
 // --- ESTADO REATIVO ---
+const uid_primeiro_bloco = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+const uid_primeira_pergunta = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}2`
+// TODO: RETIRAR DEPOIS, É APENAS PARA OS TESTES
+const uid_idade = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}3`
+const uid_sexo = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}4`
+
 const questionario = ref({
   titulo: "",
   idInterno: "",
   descricao: "",
-  primeiro: "", // ID do primeiro bloco do questionário
-  blocos: []
+  primeiro: uid_primeiro_bloco, // ID do primeiro bloco do questionário
+  blocos: [
+    {
+      uid: uid_primeiro_bloco,
+      idInterno: "idp",
+      titulo: "Dados do Paciente",
+      tipo: "identificacao",
+      primeiro: uid_primeira_pergunta,
+      perguntas: [{
+          uid: uid_primeira_pergunta,
+          idInterno: "idp_nome",
+          escopo: "Nome:",
+          tipo: "texto",
+          // a partir deste proximo: testes
+          proximo: ""
+      }]
+    }]
 });
 
 const jsonGerado = ref("");
@@ -315,13 +252,13 @@ const jsonGerado = ref("");
 // --- MÉTODOS DE MANIPULAÇÃO ---
 
 // Blocos
-const adicionarBloco = () => {
+const adicionarBloco = (identificador="") => {
   // Estamos definindo um id interno imutável para que o usuário possa modificar o identificador sem que a lógica do sistema quebre
   const uid = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
   questionario.value.blocos.push({
     uid: uid,
-    idInterno: "",
+    idInterno: identificador,
     titulo: "",
     tipo: "comum", // comum, identificacao, peso
     primeiro: "",  // ID da primeira pergunta deste bloco
@@ -346,34 +283,76 @@ const removerBloco = (idBloco) => {
   }
 };
 
-const ajustarPerguntasPorTipoDeBloco = (bloco) => {
-  if (bloco.tipo === 'identificacao') {
-    bloco.perguntas.forEach(p => {
-      p.logica = 'identificacao'
-      p.temContexto = false;
-    });
-  } else if (bloco.tipo === 'peso') {
-    bloco.perguntas.forEach(p => {
-      p.logica = 'peso';
-    });
+const mudancaBloco = (bloco) => {
+  // CalculoPeso
+  if (bloco.tipo === 'peso') {
+    if (!bloco.calculoPeso) {
+      bloco.calculoPeso = {
+        uid: `calc_${bloco.uid}`,
+        tipo: 'calculoPeso',
+        configuracao: [{
+          regra: 'maior_que',
+          limiar: 0,
+          verdadeiro: { proximo: "" },
+          falso: { proximo: "" }
+        }]
+      };
+    }
+  } else {
+    delete bloco.calculoPeso;
   }
+
+  bloco.perguntas.forEach(p => {
+    // LIMPEZA
+    if (bloco.tipo === 'comum') {
+      // numérico / equacao
+      if (p.tipo === 'numerico' || p.tipo === 'equacao') {
+        p.configuracao[0].verdadeiro = { proximo: "" }
+        p.configuracao[0].falso = { proximo: "" }
+      }
+
+      // escolha unica
+      if (p.tipo === 'escolha_unica'){
+        p.configuracao.forEach(op => {
+          //delete op.escolhido.peso
+          op.escolhido = { proximo: "" }
+        });
+      }
+    } else if (bloco.tipo === 'peso') {
+      if (!p.proximo || typeof p.proximo === 'object') {
+        p.proximo = 'calcPeso';
+      }
+    } else {
+      // mudança comum a qualquer tipo
+      if (!p.proximo) p.proximo = "";
+
+      // numérico / equacao
+      if (p.tipo === 'numerico' || p.tipo === 'equacao') {
+        p.configuracao[0].verdadeiro = { peso: 0 }
+        p.configuracao[0].falso = { peso: 0 }
+      }
+
+      // escolha unica
+      if (p.tipo === 'escolha_unica'){
+        p.configuracao.forEach(op => {
+          //delete op.escolhido.peso
+          op.escolhido = { peso: 0 }
+        });
+      }
+    }
+  });
 };
 
 // Perguntas
-const adicionarPergunta = (idBloco) => {
+const adicionarPergunta = (idBloco, identificador="") => {
   const bloco = questionario.value.blocos[idBloco];
   const uid = `uid_pergunta_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-  
-// Define padrões baseados no bloco
-  let logicaPadrao =  bloco.tipo === 'identificacao' ? 'identificacao' : 
-                      bloco.tipo === 'peso' ? 'peso' : 'redirecionamento';
 
   bloco.perguntas.push({
     uid: uid,
-    idInterno: "",
+    idInterno: identificador,
     escopo: "",
     tipo: "",
-    logica: logicaPadrao,
     // TODO: Retirar ao final
     temContexto: false,
     contexto: "",
@@ -385,24 +364,28 @@ const adicionarPergunta = (idBloco) => {
   }
 };
 
-const mudaConfigPorTipo = (pergunta) => {
-  const padraoLogicaNumerica = {
-    regra: 'maior_que',
-    limiar: 0,
-    verdadeiro: { peso: 0, proximo: "" },
-    falso: { peso: 0, proximo: "" }
-  };
 
-  if (pergunta.tipo === 'numerico' || pergunta.tipo === 'calculoPeso') {
-    pergunta.configuracao = [padraoLogicaNumerica];
-  } else if (pergunta.tipo === 'equacao') {
+const mudaConfigPorTipo = (pergunta) => {
+  delete pergunta.equacao;
+  delete pergunta.variaveis;
+
+  if (pergunta.tipo === 'escolha_unica') {
     pergunta.configuracao = [{
-      variaveis: [],
-      equacao: "",
-      condicional: [padraoLogicaNumerica]
-    }]
+      opcao: "",
+      escolhido: {}
+    }];
   } else {
-    pergunta.configuracao = []
+    pergunta.configuracao = [{
+      regra: 'maior_que',
+      limiar: 0,
+      verdadeiro:  {},
+      falso: {}
+    }];
+  }
+
+  if (pergunta.tipo === 'equacao') {
+      pergunta.equacao = "";
+      pergunta.variaveis = [];
   }
 };
 
@@ -420,62 +403,78 @@ const removerPergunta = (idBloco, idPergunta) => {
   }
 };
 
-// Opções e Variáveis
-const adicionarOpcao = (blocoIndex, perguntaIndex) => {
-  questionario.value.blocos[blocoIndex].perguntas[perguntaIndex].configuracao.push({
-    opcao: "",
-    escolhido: {
-      peso: 0,
-      proximo: ""
+// --- PERGUNTAS PRÉ-SETADAS ---
+const menuPresetQuestions = ref(false);
+const preSetadasSelecionadas = ref([]);
+
+const injetPreset = (bIdx) => {
+  const bloco = questionario.value.blocos[bIdx];
+  
+  preSetadasSelecionadas.value.forEach(templateId => {
+    const template = presetQuestions.find(p => p.templateId === templateId);
+    if (template) {
+      bloco.perguntas.push({
+        uid: `uid_preset_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        idInterno: template.idInterno,
+        escopo: template.escopo,
+        tipo: template.tipo,
+        configuracao: JSON.parse(JSON.stringify(template.configuracao)),
+        ...(template.proximo !== undefined && { proximo: template.proximo })
+      });
     }
   });
+  preSetadasSelecionadas.value = [];
+  menuPresetQuestions.value = false;
 };
 
-const removerOpcao = (blocoIndex, perguntaIndex, opcaoIndex) => {
-  questionario.value.blocos[blocoIndex].perguntas[perguntaIndex].configuracao.splice(opcaoIndex, 1);
-};
-
-const adicionarVariavel = (blocoIndex, perguntaIndex) => {
-  questionario.value.blocos[blocoIndex].perguntas[perguntaIndex].configuracao[0].variaveis.push({
-    idInterno: "",
-    variavel: "",
-    opcoes: []
-  });
-};
-
-const removerVariavel = (blocoIndex, perguntaIndex, varIndex) => {
-  questionario.value.blocos[blocoIndex].perguntas[perguntaIndex].variaveis.splice(varIndex, 1);
-};
+// Contexto
+const perguntasContexto = computed(() => {
+  const blocoId = questionario.value.blocos.find(b => b.tipo === 'identificacao');
+  if (!blocoId) return [];
+  return blocoId.perguntas.filter(p => p.tipo === 'escolha_unica');
+});
 
 // Finalização
 const salvarQuestionario = () => {
   const jsonFinal = JSON.parse(JSON.stringify(questionario.value));
 
   jsonFinal.blocos.forEach(bloco => {
-    bloco.perguntas.forEach(p => {
-      // --- LIMPEZA CONDICIONAL ---
-      if (p.tipo === 'equacao') {
-        p.configuracao = p.configuracao[0] || {};
-        if (!p.temContexto) p.configuracao.condicional = p.configuracao.condicional[0] || {};
-      }
-      // Se não marcou contexto, removemos os campos do JSON
-      if (!p.temContexto) {
-        if (p.tipo === 'numerico') p.configuracao = p.configuracao[0] || {};
-        delete p.contexto;
-      }
-      delete p.temContexto; // Removemos a variável de controle da UI
+    // Para o atributo calculoPeso
+    if (bloco.calculoPeso && Array.isArray(bloco.calculoPeso.configuracao)) {
+       bloco.calculoPeso = bloco.calculoPeso.configuracao[0] || {};
+    }
 
-      // Limpeza de tipos (Ex: se for texto, não precisa de 'equacao')
-      /*
-      if (p.tipo !== 'equacao') {
-        delete p.equacao;
-        delete p.variaveis;
+    bloco.perguntas.forEach(p => {
+      // Tipos que não são de múltipla escolha sempre viram objeto na raiz da config.
+      if (p.tipo === 'numerico' || p.tipo === 'texto' || p.tipo === 'equacao') {
+        if (Array.isArray(p.configuracao) && p.configuracao.length > 0) {
+          p.configuracao = p.configuracao[0];
+        }
       }
+
+      if (p.tipo === 'equacao') {
+        // Desempacota a condicional (que nós tínhamos feito nascer como array[1] na seed)
+        if (p.configuracao && Array.isArray(p.configuracao.condicional) && p.configuracao.condicional.length > 0) {
+          p.configuracao.condicional = p.configuracao.condicional[0];
+        }
+      }
+
+      // Retirada do atributo contexto se não houver contexto, e da flag temContexto
+      if (!p.temContexto) {
+        delete p.contexto; 
+      }
+      delete p.temContexto;
       
-      if (p.tipo !== 'escolha_unica' && p.tipo !== 'multipla_escolha') {
-        delete p.opcoes;
+      // Limpezas de identificação
+      if (bloco.tipo === 'identificacao') {
+        if (p.tipo === 'escolha_unica') {
+          p.configuracao.forEach(op => {
+            delete op.escolhido;
+          });
+        } else {
+          delete p.configuracao;
+        }
       }
-      */
     });
   });
 
