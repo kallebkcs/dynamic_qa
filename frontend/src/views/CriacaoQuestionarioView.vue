@@ -237,30 +237,6 @@ const questionario = ref({
           escopo: "Nome:",
           tipo: "texto",
           // a partir deste proximo: testes
-          proximo: uid_idade
-      },
-      {
-          uid: uid_idade,
-          idInterno: "idp_idade",
-          escopo: "Idade:",
-          tipo: "numerico",
-          configuracao: [{
-            regra: 'maior_que',
-            limiar: 0,
-            verdadeiro:  {},
-            falso: {}
-          }],
-          proximo: uid_sexo
-      },
-      {
-          uid: uid_sexo,
-          idInterno: "idp_sexo",
-          escopo: "Sexo:",
-          tipo: "escolha_unica",
-          configuracao: [
-            { opcao: "Masculino", escolhido: '' }, 
-            { opcao: "Feminino", escolhido: '' }
-          ],
           proximo: ""
       }]
     }]
