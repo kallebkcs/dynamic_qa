@@ -4,16 +4,18 @@
       <h1>Criação de Questionário</h1>
       <div class="usuario">Olá, Usuario</div> <!--TODO: Lógica de Cadastro e Login-->
     </header>
+    
+    <form @submit.prevent="salvarQuestionario">
 
     <section class="formulario">
       <div class="campo">
         <label>Título do Questionário:</label>
-        <input v-model="questionario.titulo" type="text"/>
+        <input required v-model="questionario.titulo" type="text"/>
       </div>
 
       <div class="campo">
         <label>Identificador:</label>
-        <input v-model="questionario.idInterno" type="text"/>
+        <input required pattern="^[a-z0-9_]+$" v-model="questionario.idInterno" type="text"/>
         <small style="color: #666;">Apenas letras, números e underscore (_).</small>
       </div>
 
@@ -31,12 +33,12 @@
         <div class="bloco-topo">
            <div class="campo">
             <label>Título</label>
-            <input v-model="bloco.titulo" type="text"/>
+            <input required v-model="bloco.titulo" type="text"/>
            </div>
            <!--Talvez não seja necessário um campo de identificação e podemos gerar automaticamente-->
            <div class="campo">
             <label>Identificador</label>
-            <input v-model="bloco.idInterno" type="text"/>
+            <input required pattern="^[a-z0-9_]+$" v-model="bloco.idInterno" type="text"/>
             <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
            <div class="campo">
@@ -56,13 +58,13 @@
         <div v-for="(p, pIdx) in bloco.perguntas" :key="p.uid" class="pergunta">
            <div class="campo">
             <label>Identificador</label>
-            <input v-model="p.idInterno"/>
+            <input required pattern="^[a-z0-9_]+$" v-model="p.idInterno"/>
             <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
 
            <div class="campo">
             <label>Escopo da Pergunta</label>
-            <input v-model="p.escopo" placeholder="Como vai seu dia?"/>
+            <input required v-model="p.escopo" placeholder="Como vai seu dia?"/>
            </div>
 
            <div class="campo">
@@ -84,7 +86,7 @@
 
             <div v-if="p.temContexto" class="campo">
               <label>Selecione a pergunta de Identificação:</label>
-              <select v-model="p.contexto">
+              <select required v-model="p.contexto">
                 <option value="" disabled>-- Escolha um contexto --</option>
                 <option v-for="ctx in perguntasContexto" :key="ctx.uid" :value="ctx.uid">{{ ctx.escopo || ctx.idInterno }} ({{ ctx.idInterno }})</option>
               </select>
@@ -197,27 +199,26 @@
     </section>
 
     <section class="rodape-acoes">
-      <button @click="salvarQuestionario">Gerar JSON Final</button>
+      <button type="submit">Salvar Questionário</button>
     </section>
-
-    <pre v-if="jsonGerado">{{ jsonGerado }}</pre>
+  </form>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router'
 import BlocoLogica from '../components/BlocoLogica.vue';
 import TipoNumerico from '../components/TipoNumerico.vue';
 import TipoEscolha from '../components/TipoEscolha.vue';
 import TipoEquacao from '../components/TipoEquacao.vue';
 import { presetQuestions } from '../utils/presetQuestions.js';
+import evaluatex from 'evaluatex';
 
+const router = useRouter()
 // --- ESTADO REATIVO ---
 const uid_primeiro_bloco = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 const uid_primeira_pergunta = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}2`
-// TODO: RETIRAR DEPOIS, É APENAS PARA OS TESTES
-const uid_idade = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}3`
-const uid_sexo = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}4`
 
 const questionario = ref({
   titulo: "",
@@ -241,8 +242,6 @@ const questionario = ref({
       }]
     }]
 });
-
-const jsonGerado = ref("");
 
 // --- MÉTODOS DE MANIPULAÇÃO ---
 
@@ -430,7 +429,7 @@ const perguntasContexto = computed(() => {
 });
 
 // Finalização
-const salvarQuestionario = () => {
+const posProcessamento = () => {
   const jsonFinal = JSON.parse(JSON.stringify(questionario.value));
 
   jsonFinal.blocos.forEach(bloco => {
@@ -473,9 +472,135 @@ const salvarQuestionario = () => {
     });
   });
 
-  jsonGerado.value = JSON.stringify(jsonFinal, null, 2);
-  console.log("JSON pronto para o motor:", jsonGerado.value);
+  return jsonFinal;
 };
+
+const validarDados = (questionario) => {
+  const regexId = /^[a-z0-9_]+$/;
+
+  if (!questionario.titulo?.trim()) return "O questionário precisa de um título.";
+  if (!questionario.idInterno || !regexId.test(questionario.idInterno)) {
+    return "O ID do questionário é inválido. Use apenas letras minúsculas, números e '_'.";
+  }
+
+  if (questionario.blocos.length === 0) return "O questionário precisa ter pelo menos um bloco.";
+
+  for (const bloco of questionario.blocos) {
+    if (!bloco.titulo?.trim()) return "Existe um bloco sem título.";
+    if (bloco.perguntas.length === 0) return `O bloco '${bloco.titulo}' não tem perguntas.`;
+    
+    for (const p of bloco.perguntas) {
+      if (!p.escopo?.trim()) return "Existe uma pergunta sem escopo.";
+      if (!p.idInterno || !regexId.test(p.idInterno)) {
+        return `O ID '${p.idInterno || 'vazio'}' é inválido. Siga a regra de sintaxe.`;
+      }
+
+      switch (p.tipo) {
+        
+        case 'escolha_unica':
+          if (!Array.isArray(p.configuracao) || p.configuracao.length === 0) {
+            return `A pergunta '${p.idInterno}' precisa de pelo menos uma opção de resposta.`;
+          }
+          for (const op of p.configuracao) {
+            if (!op.opcao?.trim()) return `Existe uma opção de resposta em branco na pergunta '${p.idInterno}'.`;
+            
+            if (bloco.tipo === 'peso' && (op.peso === undefined && op.escolhido?.peso === undefined)) {
+              return `Falta definir o peso numérico em uma das opções de '${p.idInterno}'.`;
+            }
+          }
+          break;
+
+        case 'numerico':
+          if (bloco.tipo !== 'identificacao') {
+            if (!p.configuracao || !p.configuracao.regra) {
+              return `Defina a regra lógica (ex: maior/menor que) para a pergunta '${p.idInterno}'.`;
+            }
+            if (p.configuracao.limiar === undefined || p.configuracao.limiar === null) {
+              return `O valor de limiar de '${p.idInterno}' não pode ficar vazio.`;
+            }
+          }
+          break;
+        case 'equacao':
+          if (!p.equacao?.trim()) {
+            return `A fórmula da equação em '${p.idInterno}' está vazia.`;
+          }
+          if (!Array.isArray(p.variaveis) || p.variaveis.length === 0) {
+            return `A equação em '${p.idInterno}' exige pelo menos uma variável mapeada.`;
+          }
+          if (!p.configuracao || p.configuracao.limiar === undefined) {
+             return `Defina a regra lógica e o limiar para o resultado da equação em '${p.idInterno}'.`;
+          }
+          // Teste com KaTeX
+          try {
+            if (window.katex) {
+              window.katex.renderToString(p.equacao, { throwOnError: true });
+            }
+          } catch (err) {
+            return `Sintaxe LaTeX inválida na equação '${p.idInterno}': ${err.message.replace("KaTeX parse error: ", "")}`;
+          }
+
+          // 2. Teste com Evaluatex
+          try {
+            // Monta um objeto falso com valor '1' para cada variável que o usuário cadastrou
+            const variaveisTeste = {};
+            p.variaveis.forEach(v => {
+              if (!v.variavel?.trim()) throw new Error("Há uma variável sem símbolo definido.");
+              variaveisTeste[v.variavel] = 1;
+            });
+
+            // Compila a equação. Se tiver letra sobrando que não tá no variaveisTeste, o evaluatex detecta.
+            const fn = evaluatex(p.equacao);
+            fn(variaveisTeste); 
+          } catch (err) {
+             return `A matemática da equação '${p.idInterno}' falhou. Verifique se todas as letras usadas na fórmula foram adicionadas na lista de variáveis. Erro: ${err.message}`;
+          }
+          break;
+
+        case 'texto':
+          // O tipo texto é livre por natureza. Se o escopo e o ID existem, ele passa.
+          break;
+
+        default:
+          return `O tipo de dado '${p.tipo}' na pergunta '${p.idInterno}' não existe.`;
+      }
+    }
+  }
+  
+  return null;
+};
+
+const salvarQuestionario = async () => {
+  // Gera o JSON do questionário
+  const jsonQuestionario = posProcessamento();
+  console.log(jsonQuestionario);
+
+  const erroValidacao = validarDados(jsonQuestionario);
+  if (erroValidacao) {
+    alert("ERRO: " + erroValidacao);
+    return; // Aborta o salvamento sumariamente
+  }
+
+  try {
+    const res = await fetch('http://localhost:3000/api/questionarios', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(jsonQuestionario)
+    });
+
+    if (res.ok) { 
+      alert('Questionário salvo com sucesso') 
+      //router.push('/');
+    } else {
+      const erro = await res.json();
+      alert("ERRO: " + erro.erro);
+    }
+  } catch (err) {
+    console.log('ERRO: ', err)
+    alert('ERRO: ' + err)
+  }
+}
 </script>
 
 <style scoped>

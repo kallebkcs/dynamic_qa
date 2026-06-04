@@ -1,51 +1,52 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-const route = useRoute()
+const route = useRoute();
+const router = useRouter();
 
 // Dados Brutos
-const questionario = ref(null)
-const carregando = ref(true)
+const questionario = ref(null);
+const carregando = ref(true);
 
 // Localização
-const uidBlocoAtivo = ref(null)
-const uidPerguntaAtiva = ref(null)
+const uidBlocoAtivo = ref(null);
+const uidPerguntaAtiva = ref(null);
 
 // Memória do Questionário
-const respostas = ref({})
-const pesoAcumulado = ref(0)
+const respostas = ref({});
+const pesoAcumulado = ref(0);
 
 // Getters
 const blocoAtual = computed(() => 
   questionario.value?.blocos.find(b => b.uid === uidBlocoAtivo.value)
-)
+);
 
 const perguntaAtual = computed(() => 
   blocoAtual.value?.perguntas.find(p => p.uid === uidPerguntaAtiva.value)
-)
+);
 
 // Lógica de carregamento de dados
 const carregarDados = async () => {
   try {
     // Busca o questionário específico pelo ID da URL
-    const response = await fetch(`http://localhost:3000/api/questionarios/${route.params.id}`)
-    const dados = await response.json()
+    const response = await fetch(`http://localhost:3000/api/questionarios/${route.params.id}`);
+    const dados = await response.json();
     
-    questionario.value = dados
+    questionario.value = dados;
 
     // Define o bloco inicial conforme definido no questionário 
-    uidBlocoAtivo.value = dados.primeiro
+    uidBlocoAtivo.value = dados.primeiro;
 
     // Define a pergunta inicial conforme definido no bloco
     if (blocoAtual.value) {
-      uidPerguntaAtiva.value = blocoAtual.value.primeiro
+      uidPerguntaAtiva.value = blocoAtual.value.primeiro;
     }
 
   } catch (error) {
-    console.error("Erro ao carregar o questionário:", error)
+    console.error("Erro ao carregar o questionário:", error);
   } finally {
-    carregando.value = false
+    carregando.value = false;
   }
 }
 
@@ -78,6 +79,7 @@ const redirecionador = (destino) => {
     // Fim de questionário: paciente tem diagnóstico
     if (typeof destino.proximo === 'object' && destino.proximo.diagnostico) {
       alert("Diagnóstico: " + destino.proximo.diagnostico);//Finalizar questionário
+      router.push('/');
       return;
     }
 

@@ -3,7 +3,7 @@
     <h4>Opções</h4>
     <div v-for="(opcao, opIdx) in pergunta.configuracao" :key="opIdx" class="opcao">
       <label>Opção:</label>
-      <input v-model="opcao.opcao" type="text" placeholder="Opção"/>
+      <input required v-model="opcao.opcao" type="text" placeholder="Opção"/>
       <div v-if="tipoLogica === 'comum'">
         <BlocoLogica 
           v-if="opcao.escolhido"
@@ -19,7 +19,7 @@
       </div>
       <div v-else-if="tipoLogica === 'peso'">
         <label>Peso:</label>
-        <input type="number" v-model.number="opcao.escolhido.peso"/>
+        <input required type="number" v-model.number="opcao.escolhido.peso"/>
       </div>
       <button class="danger" @click="removerOpcao(opIdx)">Remover</button>
     </div>

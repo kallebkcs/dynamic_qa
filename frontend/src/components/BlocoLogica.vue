@@ -2,7 +2,7 @@
   <div class="bloco-logica">
     <div class="campo-logica">
       <label>Próxima Pergunta:</label>
-      <select v-model="tipoDestino">
+      <select required v-model="tipoDestino">
         <option value="" disabled>-- Selecione o rumo --</option>
         <template v-if="!ehCalculoPeso">
           <option value="pergunta_existente">Ir para Pergunta Existente</option>
@@ -21,7 +21,7 @@
     </div>
 
     <div v-if="tipoDestino === 'pergunta_existente'" class="ramo">
-      <select v-model="destino.proximo">
+      <select required v-model="destino.proximo">
         <option v-for="p in perguntasDoBloco.filter(p => p.uid !== uidPerguntaAtual)" :key="p.uid" :value="p.uid">
           {{ p.idInterno }}
         </option>
@@ -29,21 +29,21 @@
     </div>
 
     <div v-if="tipoDestino === 'nova_pergunta'" class="ramo">
-      <input v-model="idNovaPergunta" placeholder="Identificador da nova pergunta" />
+      <input required pattern="^[a-z0-9_]+$" v-model="idNovaPergunta" placeholder="Identificador da nova pergunta" />
       <small style="color: #666;">Apenas letras, números e underscore (_).</small>
       <button @click="criarPergunta">Criar Pergunta</button>
     </div>
 
     <div v-if="tipoDestino === 'fim_bloco'" class="ramo">
       <label>O que acontece após este bloco?</label>
-      <select v-model="acaoFimBloco">
+      <select required v-model="acaoFimBloco">
         <option value="bloco_existente">Ir para Bloco Existente</option>
         <option value="novo_bloco">Criar Novo Bloco</option>
         <option value="fim_questionario">Finalizar (Diagnóstico)</option>
       </select>
 
       <div v-if="acaoFimBloco === 'bloco_existente'" class="sub-ramo">
-        <select v-model="destino.proximo.proximo">
+        <select required  v-model="destino.proximo.proximo">
           <option v-for="b in blocosDisponiveis.filter(b => b.uid !== uidBlocoAtual && b.tipo !== 'identificacao')" :key="b.uid" :value="b.uid">
              {{ b.idInterno }}
           </option>
@@ -51,18 +51,16 @@
       </div>
 
       <div v-if="acaoFimBloco === 'novo_bloco'" class="sub-ramo">
-         <input v-model="idNovoBloco" placeholder="Identificador do novo bloco" />
+         <input required pattern="^[a-z0-9_]+$" v-model="idNovoBloco" placeholder="Identificador do novo bloco" />
          <small style="color: #666;">Apenas letras, números e underscore (_).</small>
          <button @click="criarBloco">Criar Bloco</button>
       </div>
 
       <div v-if="acaoFimBloco === 'fim_questionario'" class="sub-ramo">
         <label>Diagnóstico do Paciente:</label>
-        <input v-model="destino.proximo.proximo.diagnostico" type="text"/>
+        <input required v-model="destino.proximo.proximo.diagnostico" type="text"/>
       </div>
     </div>
-
-
   </div>
 </template>
 

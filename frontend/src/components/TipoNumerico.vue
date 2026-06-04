@@ -9,7 +9,8 @@
       </select>
       <div v-if="opcoesDoContexto">
         <div v-for="(op, idx) in opcoesDoContexto" :key="idx">
-          <input 
+          <input
+            required 
             type="number" 
             v-model.number="pergunta.configuracao[0].limiar[op.opcao]" 
             placeholder="valor" 
@@ -18,7 +19,7 @@
         </div>
       </div>
       <div v-else>
-        <input type="number" v-model.number="pergunta.configuracao[0].limiar" placeholder="valor"/>
+        <input required type="number" v-model.number="pergunta.configuracao[0].limiar" placeholder="valor"/>
       </div>
       <span>então:</span>
       <div class="verdadeiro">
@@ -55,7 +56,7 @@
         </div>
         <div v-else-if="tipoLogica === 'peso'">
           <label>Peso:</label>
-          <input type="number" v-model.number="pergunta.configuracao[0].falso.peso"/>
+          <input required type="number" v-model.number="pergunta.configuracao[0].falso.peso"/>
         </div>
       </div>
     </div>
