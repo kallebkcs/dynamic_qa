@@ -22,6 +22,27 @@ onMounted(carregarQuestionarios)
 const navegarParaQuestionario = (id) => {
   router.push(`/questionario/${id}`)
 }
+
+// Excluir questionário
+const excluirQuestionario = async (id) => {
+  if (!window.confirm("Você tem certeza que deseja apagar este questionário? Essa ação não tem volta.")) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:3000/api/questionarios/${id}`, {method: 'DELETE'});
+    if (res.ok) {
+      alert('Questionário deletado com sucesso');
+      questionarios.value = questionarios.value.filter(q => q.idInterno !== id);
+    } else {
+      alert('Erro ao deletar questionário.')
+    }
+  } catch (err) {
+    alert('Erro de conexão: ' + err);
+    console.error("Erro ao deletar questionário: ", err);
+  }
+}
+
 </script>
 
 <template>
@@ -41,9 +62,14 @@ const navegarParaQuestionario = (id) => {
           <button @click="navegarParaQuestionario(q.idInterno)">
             INICIAR
           </button>
+          <button @click="router.push(`/edicao-questionario/${q.idInterno}`)">EDITAR</button>
+          <button @click="router.push({path: '/criacao-questionario', query: {clone: q.idInterno}})">EDITAR CÓPIA</button>
+          <button class="danger" @click="excluirQuestionario(q.idInterno)">EXCLUIR</button>
         </div>
       </div>
     </div>
+
+    <button @click="router.push('/criacao-questionario')">Criar questionário</button>
   </main>
 </template>
 

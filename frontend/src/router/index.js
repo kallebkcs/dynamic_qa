@@ -76,7 +76,12 @@ const router = createRouter({
         perfil: 'coordenador'
       }
     },
-
+    
+    {
+      path: '/edicao-questionario/:id',
+      name: 'edicao-questionario',
+      component: CriacaoQuestionarioView
+    }
   ]
 })
 

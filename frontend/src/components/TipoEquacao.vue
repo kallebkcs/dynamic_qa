@@ -2,7 +2,12 @@
   <div v-if="pergunta.configuracao[0]" class="equacao-box">
     <div class="campo">
         <label>Equação (Em LaTeX):</label>
-        <input v-model="pergunta.equacao" type="text" placeholder="\frac{a}{b} + c"/>
+        <input required rows=3 v-model="pergunta.equacao" type="text" placeholder="\frac{a}{b} + c"/>
+        <small style="color: #666;">OBS: para multiplicações, utilize espaço, asterisco ou \cdot.</small>
+        <div 
+        class="katex-preview-box" 
+        v-html="renderizarPreviewKaTeX(pergunta.equacao)"
+        ></div>
     </div>
 
     <div class="campo">
@@ -11,21 +16,21 @@
       <div v-for="(variavel, varIdx) in pergunta.variaveis" :key="varIdx" class="variavel-item">
           <div style="margin-bottom: 1rem;">
           <label>Identificador:</label>
-          <select v-model="variavel.uid" style="flex-grow: 1;">
+          <select required v-model="variavel.uid" style="flex-grow: 1;">
               <option value="" disabled>-- Selecione a origem do dado --</option>
               <option v-for="p in perguntasParaMapear" :key="p.uid" :value="p.uid">
               {{ p.label }} ({{ p.idInterno }})
               </option>
           </select>
           <label>Símbolo:</label>
-          <input v-model="variavel.variavel" type="text" placeholder="x"/>
+          <input required v-model="variavel.variavel" type="text" placeholder="x"/>
           <button class="danger" @click="removerVariavel(varIdx)">Excluir variável</button>
 
           <div v-if="obterOpcoesDaVariavel(variavel.uid)">
               <label>Valores das opções:</label>
               <div v-for="(op, opIdx) in obterOpcoesDaVariavel(variavel.uid)">
                   <label>{{ op.opcao }}:</label>
-                  <input type="number" v-model.number="variavel.mapeamento[op.opcao]" placeholder="Valor"/>
+                  <input required type="number" step="any" v-model.number="variavel.mapeamento[op.opcao]" placeholder="Valor"/>
               </div>
           </div>
         </div>
@@ -84,6 +89,22 @@ const perguntasParaMapear = computed(() => {
   });
   return lista;
 });
+
+const renderizarPreviewKaTeX = (formula) => {
+  if (!formula || !formula.trim()) {
+    return '<span style="color: gray; font-size: 0.9em;">A prévia aparecerá aqui...</span>';
+  }
+  
+  try {
+    return window.katex.renderToString(formula, {
+      throwOnError: true, 
+      displayMode: true
+    });
+  } catch (err) {
+    // Se a sintaxe estiver incompleta durante a digitação, mostra o erro em vermelhozinho
+    return `<span style="color: #ff4444; font-size: 0.8em;">Escrevendo: ${err.message.replace("KaTeX parse error: ", "")}</span>`;
+  }
+};
 
 const obterOpcoesDaVariavel = (uidSelecionado) => {
   const pergunta = perguntasParaMapear.value.find(p => p.uid === uidSelecionado);

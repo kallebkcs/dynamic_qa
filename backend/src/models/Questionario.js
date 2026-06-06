@@ -30,7 +30,8 @@ const questionarioSchema = new mongoose.Schema({
     descricao: String,
     criadoPor: String,
     primeiro: String,
-    blocos: [blocoSchema]
+    blocos: [blocoSchema],
+    temRespostas: { type: Boolean, default: false }
 })
 
 const Questionario = mongoose.model('Questionario', questionarioSchema);
