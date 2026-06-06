@@ -22,6 +22,11 @@ const router = createRouter({
       path: '/criacao-questionario',
       name: 'criacao-questionario',
       component: CriacaoQuestionarioView
+    },
+    {
+      path: '/edicao-questionario/:id',
+      name: 'edicao-questionario',
+      component: CriacaoQuestionarioView
     }
   ]
 })

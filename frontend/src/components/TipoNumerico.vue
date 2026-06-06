@@ -11,7 +11,8 @@
         <div v-for="(op, idx) in opcoesDoContexto" :key="idx">
           <input
             required 
-            type="number" 
+            type="number"
+            step="any" 
             v-model.number="pergunta.configuracao[0].limiar[op.opcao]" 
             placeholder="valor" 
           />
@@ -19,7 +20,7 @@
         </div>
       </div>
       <div v-else>
-        <input required type="number" v-model.number="pergunta.configuracao[0].limiar" placeholder="valor"/>
+        <input required type="number"  step="any" v-model.number="pergunta.configuracao[0].limiar" placeholder="valor"/>
       </div>
       <span>então:</span>
       <div class="verdadeiro">
@@ -37,7 +38,7 @@
         </div>
         <div v-else-if="tipoLogica === 'peso'">
           <label>Peso:</label>
-          <input type="number" v-model.number="pergunta.configuracao[0].verdadeiro.peso"/>
+          <input type="number"  step="any" v-model.number="pergunta.configuracao[0].verdadeiro.peso"/>
         </div>
       </div>
       <span>Se não, então:</span>
@@ -56,7 +57,7 @@
         </div>
         <div v-else-if="tipoLogica === 'peso'">
           <label>Peso:</label>
-          <input required type="number" v-model.number="pergunta.configuracao[0].falso.peso"/>
+          <input required type="number" step="any" v-model.number="pergunta.configuracao[0].falso.peso"/>
         </div>
       </div>
     </div>

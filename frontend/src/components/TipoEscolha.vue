@@ -19,7 +19,7 @@
       </div>
       <div v-else-if="tipoLogica === 'peso'">
         <label>Peso:</label>
-        <input required type="number" v-model.number="opcao.escolhido.peso"/>
+        <input required type="number"  step="any" v-model.number="opcao.escolhido.peso"/>
       </div>
       <button class="danger" @click="removerOpcao(opIdx)">Remover</button>
     </div>

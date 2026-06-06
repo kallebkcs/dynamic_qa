@@ -30,7 +30,7 @@
               <label>Valores das opções:</label>
               <div v-for="(op, opIdx) in obterOpcoesDaVariavel(variavel.uid)">
                   <label>{{ op.opcao }}:</label>
-                  <input required type="number" v-model.number="variavel.mapeamento[op.opcao]" placeholder="Valor"/>
+                  <input required type="number" step="any" v-model.number="variavel.mapeamento[op.opcao]" placeholder="Valor"/>
               </div>
           </div>
         </div>

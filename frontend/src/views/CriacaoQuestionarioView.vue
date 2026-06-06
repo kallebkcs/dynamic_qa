@@ -1,8 +1,9 @@
 <template>
   <div class="container">
     <header class="topo">
-      <h1>Criação de Questionário</h1>
-      <div class="usuario">Olá, Usuario</div> <!--TODO: Lógica de Cadastro e Login-->
+      <h1>{{ modoEdicao ? 'Edição de Questionário' : 'Criação de Questionário' }}</h1>
+      <button @click="router.push('/')">VOLTAR</button>
+      <!-- <div class="usuario">Olá, Usuario</div> -->
     </header>
     
     <form @submit.prevent="salvarQuestionario">
@@ -15,7 +16,7 @@
 
       <div class="campo">
         <label>Identificador:</label>
-        <input required pattern="^[a-z0-9_]+$" v-model="questionario.idInterno" type="text"/>
+        <input required pattern="^[a-z0-9_]+$" :disabled="questionario.temRespostas" v-model="questionario.idInterno" type="text"/>
         <small style="color: #666;">Apenas letras, números e underscore (_).</small>
       </div>
 
@@ -38,7 +39,7 @@
            <!--Talvez não seja necessário um campo de identificação e podemos gerar automaticamente-->
            <div class="campo">
             <label>Identificador</label>
-            <input required pattern="^[a-z0-9_]+$" v-model="bloco.idInterno" type="text"/>
+            <input required pattern="^[a-z0-9_]+$" :disabled="questionario.temRespostas" v-model="bloco.idInterno" type="text"/>
             <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
            <div class="campo">
@@ -51,14 +52,14 @@
            </div>
            
            <div class="acoes">
-           <button class="danger" @click="removerBloco(bIdx)" v-if="bloco.tipo !== 'identificacao'">Excluir</button>
+           <button class="danger" :disabled="questionario.temRespostas" @click="removerBloco(bIdx)" v-if="bloco.tipo !== 'identificacao'">Excluir</button>
           </div>
         </div>
 
         <div v-for="(p, pIdx) in bloco.perguntas" :key="p.uid" class="pergunta">
            <div class="campo">
             <label>Identificador</label>
-            <input required pattern="^[a-z0-9_]+$" v-model="p.idInterno"/>
+            <input required pattern="^[a-z0-9_]+$" :disabled="questionario.temRespostas" v-model="p.idInterno"/>
             <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
 
@@ -160,11 +161,11 @@
             >
               {{ bloco.primeiro === p.uid ? '★ Primeiro' : '☆ Definir como primeiro' }}
             </button>
-            <button class="danger" @click="removerPergunta(bIdx, pIdx)">Remover</button>
+            <button class="danger" :disabled="questionario.temRespostas" @click="removerPergunta(bIdx, pIdx)">Remover</button>
           </div>
         </div>
 
-        <button @click="adicionarPergunta(bIdx)">+ Nova Pergunta</button>
+        <button :disabled="questionario.temRespostas" @click="adicionarPergunta(bIdx)">+ Nova Pergunta</button>
         <!-- Perguntas pré-setadas -->
         <div v-if="bloco.tipo === 'identificacao'">
           <button @click="menuPresetQuestions = !menuPresetQuestions">{{ menuPresetQuestions ? 'Ocultar Perguntas de Identificação' : 'Adicionar Perguntas de Identificação' }}</button>
@@ -195,19 +196,19 @@
         </div>
       </div>
       
-      <button class="btn-bloco" @click="adicionarBloco()">+ Criar novo bloco</button>
+      <button class="btn-bloco" :disabled="questionario.temRespostas" @click="adicionarBloco()">+ Criar novo bloco</button>
     </section>
 
     <section class="rodape-acoes">
-      <button type="submit">Salvar Questionário</button>
+      <button type="submit" :disabled="salvando">{{ salvando ? 'Aguarde...' : (modoEdicao ? 'Salvar Alterações' : 'Salvar Questionário') }}</button>
     </section>
   </form>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router'
 import BlocoLogica from '../components/BlocoLogica.vue';
 import TipoNumerico from '../components/TipoNumerico.vue';
 import TipoEscolha from '../components/TipoEscolha.vue';
@@ -215,7 +216,114 @@ import TipoEquacao from '../components/TipoEquacao.vue';
 import { presetQuestions } from '../utils/presetQuestions.js';
 import evaluatex from 'evaluatex';
 
-const router = useRouter()
+const router = useRouter();
+const route = useRoute();
+
+// Controle de modo
+const modoEdicao = ref(false);
+const idQuestionarioEdicao = ref(null);
+
+// Modo Edição
+onMounted(async () => {
+  // tirar uma feature chata da rodinha do mouse alterar o input type number
+  document.addEventListener('wheel', () => {
+    if (document.activeElement && document.activeElement.type === 'number') {
+      document.activeElement.blur();
+    }
+  }, { passive: true });
+
+  if (route.params.id) {
+    modoEdicao.value = true;
+    idQuestionarioEdicao.value = route.params.id;
+    await carregarDadosEdicao(route.params.id);
+  } else if (route.query.clone) {
+    modoEdicao.value = false;
+    await carregarDadosEdicao(route.query.clone, true)
+  }
+});
+
+const carregarDadosEdicao = async (id, duplicar=false) => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/questionarios/${id}`);
+    if (res.ok) {
+      const dadosBrutos = await res.json();
+      if (duplicar) {
+        const clone = preProcessamento(dadosBrutos);
+        delete clone._id;
+        delete clone.__v;
+
+        clone.titulo = clone.titulo + " (Cópia)";
+        clone.idInterno = clone.idInterno + "_copia";
+        //clone.idPlanilha = ""; TODO: Lógica de idPlanilha
+        clone.temRespostas = false;
+        questionario.value = clone;
+      } else {
+        questionario.value = preProcessamento(dadosBrutos);
+      }
+    } else {
+      alert("Questionário não encontrado. Redirecionando para a página inicial");
+      router.push('/');
+    }
+  } catch (err) {
+    console.error("ERRO ao buscar questionário: ", err);
+    alert("Erro de conexão ao carregar dados");
+  }
+};
+
+const preProcessamento = (dadosBrutos) => {
+  // Faz um clone profundo para não alterar a referência original do fetch
+  const questionarioCarregado = JSON.parse(JSON.stringify(dadosBrutos));
+
+  questionarioCarregado.blocos.forEach(bloco => {
+    if (bloco.calculoPeso && typeof bloco.calculoPeso === 'object' && !Array.isArray(bloco.calculoPeso)) {
+      bloco.calculoPeso = {
+        uid: `calc_${bloco.uid}`,
+        tipo: 'calculoPeso',
+        configuracao: [bloco.calculoPeso]
+      };
+    }
+
+    bloco.perguntas.forEach(p => {
+      // Reconstrói a flag visual do checkbox de contexto
+      p.temContexto = !!p.contexto;
+
+      // Reempacota a configuração de objetos de volta para Arrays
+      if (['numerico', 'texto', 'equacao'].includes(p.tipo)) {
+        if (p.configuracao && !Array.isArray(p.configuracao)) {
+          p.configuracao = [p.configuracao];
+        } else if (!p.configuracao) {
+          p.configuracao = [];
+        }
+      }
+
+      // Reempacota a condicional da equação
+      if (p.tipo === 'equacao' && p.configuracao && p.configuracao[0]) {
+        if (p.configuracao[0].condicional && !Array.isArray(p.configuracao[0].condicional)) {
+          p.configuracao[0].condicional = [p.configuracao[0].condicional];
+        }
+      }
+
+      // Restaura as propriedades vazias varridas no bloco de identificação
+      if (bloco.tipo === 'identificacao') {
+        if (p.tipo === 'escolha_unica') {
+          p.configuracao?.forEach(op => {
+            if (!op.escolhido) op.escolhido = {};
+          });
+        } else if (p.tipo === 'numerico') {
+          p.configuracao = [{
+            regra: 'maior_que',
+            limiar: 0,
+            verdadeiro: {},
+            falso: {}
+          }];
+        }
+      }
+    });
+  });
+
+  return questionarioCarregado;
+};
+
 // --- ESTADO REATIVO ---
 const uid_primeiro_bloco = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 const uid_primeira_pergunta = `uid_bloco_${Date.now()}_${Math.random().toString(36).substr(2, 5)}2`
@@ -569,36 +677,43 @@ const validarDados = (questionario) => {
   return null;
 };
 
+const salvando = ref(false);
+
 const salvarQuestionario = async () => {
   // Gera o JSON do questionário
   const jsonQuestionario = posProcessamento();
-  console.log(jsonQuestionario);
 
   const erroValidacao = validarDados(jsonQuestionario);
   if (erroValidacao) {
     alert("ERRO: " + erroValidacao);
     return; // Aborta o salvamento sumariamente
   }
-
+  salvando.value = true;
   try {
-    const res = await fetch('http://localhost:3000/api/questionarios', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+    const url = modoEdicao.value 
+      ? `http://localhost:3000/api/questionarios/${idQuestionarioEdicao.value}`
+      : 'http://localhost:3000/api/questionarios';
+      
+    const metodo = modoEdicao.value ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(jsonQuestionario)
     });
 
     if (res.ok) { 
       alert('Questionário salvo com sucesso') 
-      //router.push('/');
+      router.push('/');
     } else {
       const erro = await res.json();
-      alert("ERRO: " + erro.erro);
+      alert("ERRO: " + erro);
     }
   } catch (err) {
     console.log('ERRO: ', err)
     alert('ERRO: ' + err)
+  } finally {
+    salvando.value = false;
   }
 }
 </script>

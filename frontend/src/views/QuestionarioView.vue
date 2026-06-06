@@ -17,6 +17,11 @@ const uidPerguntaAtiva = ref(null);
 const respostas = ref({});
 const pesoAcumulado = ref(0);
 
+// Submissão
+const respostasUsuario = ref({});
+const diagnosticoFinal = ref("");
+const enviando = ref(false);
+
 // Getters
 const blocoAtual = computed(() => 
   questionario.value?.blocos.find(b => b.uid === uidBlocoAtivo.value)
@@ -53,6 +58,10 @@ const carregarDados = async () => {
 // Redirecionador
 const redirecionador = (destino) => {
   if (destino === 'calculoPeso') {
+    // escreve o peso acumulado
+    respostas.value['peso_acumulado_' + blocoAtual.value.idInterno] = pesoAcumulado.value;
+
+    // calcula destino baseado na regra
     const calc = blocoAtual.value.calculoPeso;
     let atendeRegra;
 
@@ -78,8 +87,9 @@ const redirecionador = (destino) => {
   if (typeof destino === 'object' && destino !== null) {
     // Fim de questionário: paciente tem diagnóstico
     if (typeof destino.proximo === 'object' && destino.proximo.diagnostico) {
-      alert("Diagnóstico: " + destino.proximo.diagnostico);//Finalizar questionário
-      router.push('/');
+      //alert("Diagnóstico: " + destino.proximo.diagnostico);//Finalizar questionário
+      enviarRespostas(destino.proximo.diagnostico)
+      //router.push('/');
       return;
     }
 
@@ -111,7 +121,7 @@ const resolverLogica = (pergunta) => {
       const valorPeso = op?.peso ?? op?.escolhido?.peso ?? 0;
       pesoAcumulado.value += Number(valorPeso);
     } 
-    else if (pergunta.tipo === 'numerico') {
+    else if (pergunta.tipo === 'numerico' || pergunta.tipo === 'equacao') {
       // Resolve limiar com dicionário de contexto (Uma maravilha comparado ao que era)
       let limiar = pergunta.configuracao.limiar;
       if (pergunta.contexto && typeof limiar === 'object') {
@@ -119,11 +129,17 @@ const resolverLogica = (pergunta) => {
         const chave = typeof respContexto === 'object' ? respContexto.opcao : respContexto;
         limiar = limiar[chave];
       }
+      
+      const valorAvaliado = (pergunta.tipo === 'equacao') ? calcularEquacao(pergunta) : respostaDada;
+
       const atende = (pergunta.configuracao.regra === 'maior_que') 
-        ? Number(respostaDada) > limiar 
-        : Number(respostaDada) < limiar;
+        ? Number(valorAvaliado) > limiar 
+        : Number(valorAvaliado) < limiar;
         
       const alvo = atende ? pergunta.configuracao.verdadeiro : pergunta.configuracao.falso;
+      console.log(pergunta.configuracao);
+      console.log('RESULTADO: ', Number(valorAvaliado))
+      console.log('ALVO: ', alvo);
       pesoAcumulado.value += Number(alvo?.peso ?? 0);
     }
   }
@@ -167,7 +183,6 @@ const proximoPasso = () => {
   // CASO 1: Identificação mostra tudo de uma vez. Ignoramos as rotas internas e pegamos a pergunta que cospe o usuário pra fora do bloco.
   if (blocoAtual.value?.tipo === 'identificacao') {
     const perguntaDeSaida = blocoAtual.value.perguntas.find(p => typeof p.proximo === 'object');
-    console.log(blocoAtual.value.perguntas);
     destinoDoPasso = perguntaDeSaida?.proximo;
   } 
   // CASO 2: Fluxo normal um por um
@@ -246,6 +261,7 @@ const calcularEquacao = (pergunta) => {
   try {
     const fn = evaluatex(pergunta.equacao);
     const resultado = fn(valoresParaCalculo);
+    respostas.value[pergunta.idInterno] = resultado.toFixed(2);
     return resultado.toFixed(2);
   } catch (err) {
     console.error("Erro na equação:", err);
@@ -266,7 +282,7 @@ const obterValorVariavel = (v) => {
 const obterNomeVariavel = (uidBusca) => {
   for (const bloco of questionario.value.blocos) {
     const pEncontrada = bloco.perguntas.find(p => p.uid === uidBusca);
-    if (pEncontrada) return pEncontrada.idInterno || pEncontrada.escopo;
+    if (pEncontrada) return pEncontrada.escopo;
   }
   return uidBusca; // Fallback caso o universo entre em colapso
 };
@@ -281,6 +297,67 @@ const renderizarFormula = (formula) => {
     return formula;
   }
 };
+
+// SUBMIT
+const formatarEnvio = () => {
+  const respostasLimpas = {};
+
+  // Varremos o mapa original para saber quem é quem
+  questionario.value.blocos.forEach((bloco) => {
+    if (!bloco.perguntas) return;
+
+    bloco.perguntas.forEach((p) => {
+      const dadoCru = respostas.value[p.uid]; // Puxa pelo UID feio
+
+      if (dadoCru !== undefined) {
+        if (typeof dadoCru === 'object') {
+          respostasLimpas[p.idInterno] = bloco.tipo === 'peso' ? dadoCru.escolhido.peso : dadoCru.opcao;
+        } else respostasLimpas[p.idInterno] = dadoCru;
+      }
+
+      if (p.tipo === 'equacao' && respostas.value[p.idInterno]) respostasLimpas[p.idInterno] = parseFloat(respostas.value[p.idInterno]);
+    });
+
+    if (bloco.tipo === 'peso') respostasLimpas['peso_acumulado_' + bloco.idInterno] = respostas.value['peso_acumulado_' + bloco.idInterno]
+  });
+
+  return respostasLimpas;
+};
+
+const enviarRespostas = async (diagnostico) => {
+  const respostasUsuario = formatarEnvio();
+
+  const payload = {
+    idQuestionario: questionario.value.idInterno,
+    idPlanilha: '1iyXTLEwhqrF7XNu-3Au4FLOWbF2hn9bQm0iqtidC5Pk', // por enquanto estático. TODO: alterar para dinamico
+    diagnostico: diagnostico, 
+    respostas: respostasUsuario
+  };
+
+  console.log(payload);
+
+  enviando.value = true;
+  try {
+    const res = await fetch('http://localhost:3000/api/questionarios/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      alert("Diagnóstico: " + diagnostico);
+      router.push('/'); 
+    } else {
+      const erro = await res.json();
+      alert(`O servidor recusou o pacote: ${erro.erro || 'Motivo desconhecido'}`);
+    }
+  } catch (err) {
+    alert("Erro de conexão. Verifique se o back-end está rodando.");
+    console.error(err);
+  } finally {
+    enviando.value = false;
+  }
+}
 
 onMounted(carregarDados)
 </script>
@@ -353,7 +430,7 @@ onMounted(carregarDados)
 <div class="acoes-navegacao">
         <button 
             @click="proximoPasso" 
-            :disabled="!podeAvancar" 
+            :disabled="(!podeAvancar) || enviando" 
             class="btn-principal"
         >Confirmar  
         </button>

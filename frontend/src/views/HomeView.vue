@@ -62,6 +62,8 @@ const excluirQuestionario = async (id) => {
           <button @click="navegarParaQuestionario(q.idInterno)">
             INICIAR
           </button>
+          <button @click="router.push(`/edicao-questionario/${q.idInterno}`)">EDITAR</button>
+          <button @click="router.push({path: '/criacao-questionario', query: {clone: q.idInterno}})">EDITAR CÓPIA</button>
           <button class="danger" @click="excluirQuestionario(q.idInterno)">EXCLUIR</button>
         </div>
       </div>
