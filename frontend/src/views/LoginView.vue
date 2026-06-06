@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    <div class="login-topo">Dynamic QA</div>
     <div class="card-login">
       <h1>Login</h1>
 
@@ -29,6 +30,7 @@
         Entrar
       </button>
     </div>
+    <div class="login-rodape">© 2026 - UFSC Ara</div>
   </div>
 </template>
 
@@ -136,35 +138,123 @@ export default {
 
 <style scoped>
 .container {
-  max-width: 400px;
-  margin: 80px auto;
-  font-family: Arial, sans-serif;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.card-login {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 24px;
+.login-topo {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.95);
+  color: #1e3a8a;
+  font-weight: 700;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+  .card-login {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 28px;
+  padding: 36px 32px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.card-login h1 {
+  margin-bottom: 24px;
+  font-size: 2rem;
+  color: #1f2937;
+  text-align: center;
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.campo label {
+  font-weight: 700;
+  color: #334155;
 }
 
 input,
 select {
-  padding: 8px;
-  font-size: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1f2937;
+  font-size: 1rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.14);
 }
 
 button {
-  padding: 10px;
-  background: #222;
-  color: white;
+  width: 100%;
+  padding: 16px 18px;
   border: none;
-  border-radius: 6px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 14px 30px rgba(102, 126, 234, 0.28);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(102, 126, 234, 0.32);
+}
+
+.login-rodape {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.9);
+  color: #1e3a8a;
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+}
+
+@media (max-width: 520px) {
+  .card-login {
+    padding: 28px 22px;
+  }
+
+  .card-login h1 {
+    font-size: 1.7rem;
+  }
+
+  input,
+  select,
+  button {
+    font-size: 0.98rem;
+  }
 }
 </style>

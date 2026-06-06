@@ -480,7 +480,7 @@ export default {
 
     irParaCriarQuestionario() {
       this.$router.push(
-        "/criacao-questionario-2"
+        "/criacao-questionario"
       )
     },
 
@@ -497,67 +497,217 @@ export default {
 
 <style scoped>
 .container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
+  max-width: 1120px;
+  margin: 40px auto;
+  padding: 28px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 32px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15);
 }
 
 .topo {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 18px;
+  padding: 28px 32px;
+  margin-bottom: 26px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 28px;
+  color: white;
+  box-shadow: 0 18px 40px rgba(102, 126, 234, 0.22);
+}
+
+.topo h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0;
 }
 
 .acoes {
   display: flex;
-  gap: 10px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 14px 26px;
+  border: none;
+  border-radius: 999px;
+  background: #1f2937;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.18);
+}
+
+button.danger {
+  background: #ef4444;
 }
 
 .card {
-  margin-top: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 20px;
+  margin-top: 24px;
+  padding: 28px 30px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 22px;
+  color: #111827;
 }
 
 .campo {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 18px 20px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.campo label {
+  font-weight: 600;
+  color: #334155;
 }
 
 input,
 select {
-  padding: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 1rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-button {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 6px;
-  background: #222;
-  color: white;
-  cursor: pointer;
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
 }
 
-button:hover {
-  opacity: 0.9;
+.card > button {
+  margin-top: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 14px 30px rgba(102, 126, 234, 0.24);
 }
 
-.danger {
-  background: #c62828;
+.card > button:hover {
+  background: linear-gradient(135deg, #5562d3 0%, #653d98 100%);
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+  margin-top: 8px;
+}
+
+thead th {
+  padding: 16px 18px;
+  text-align: left;
+  color: #4f46e5;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+tbody tr {
+  background: white;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 18px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+tbody tr:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.1);
 }
 
 th,
 td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: left;
+  padding: 16px 18px;
+  border: none;
+}
+
+tbody td {
+  color: #334155;
+}
+
+tbody tr td:last-child {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .container {
+    padding: 22px;
+  }
+
+  .topo {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .acoes {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .campo {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    margin: 20px auto;
+    padding: 18px;
+  }
+
+  .topo h1 {
+    font-size: 1.6rem;
+  }
+
+  .acoes {
+    flex-direction: column;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .campo {
+    gap: 12px;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  thead th {
+    min-width: 160px;
+  }
 }
 </style>

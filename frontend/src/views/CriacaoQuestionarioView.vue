@@ -1,6 +1,11 @@
 <template>
   <div class="container">
     <header class="topo">
+      <div>
+        <h1>Criação de Questionário</h1>
+        <!-- <div class="usuario">Olá, Usuario</div> TODO: Lógica de Cadastro e Login-->
+      </div>
+      <router-link to="/coordenador" class="sair-btn">Voltar</router-link>
       <h1>{{ modoEdicao ? 'Edição de Questionário' : 'Criação de Questionário' }}</h1>
       <button @click="router.push('/')">VOLTAR</button>
       <!-- <div class="usuario">Olá, Usuario</div> -->
@@ -177,6 +182,8 @@
             </label>
             <button @click="injetPreset(bIdx)" :disabled="preSetadasSelecionadas.length === 0">Inserir {{ preSetadasSelecionadas.length }} pergunta(s)</button>
           </div>
+
+           <!-- Aqui entrarão os campos específicos de cada tipo que desenhamos -->
         </div>
         
         <!-- Decisão de peso -->
@@ -719,133 +726,285 @@ const salvarQuestionario = async () => {
 </script>
 
 <style scoped>
+:root {
+  --bg: #f3f4ff;
+  --card: rgba(255, 255, 255, 0.96);
+  --border: rgba(99, 102, 241, 0.18);
+  --text: #1f2937;
+  --muted: #4b5563;
+  --primary: #4f46e5;
+  --primary-strong: #4338ca;
+  --danger: #dc2626;
+}
+
 .container {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
+  padding: 32px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
 }
 
 .topo {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.topo h1 {
+  font-size: 2.25rem;
+  margin: 0;
+}
+
+.usuario {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.sair-btn {
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: #4f46e5;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.18);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.sair-btn:hover {
+  transform: translateY(-1px);
+  background: #4338ca;
 }
 
 .formulario,
 .blocos,
 .json-preview {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+}
+
+.formulario,
+.bloco,
+.equacao-box,
+pre {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+}
+
+.formulario {
+  padding: 28px;
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+label {
+  color: var(--primary-strong);
+  font-weight: 700;
+  font-size: 0.98rem;
 }
 
 input,
 textarea,
 select {
-  padding: 8px;
-  font-size: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 16px;
+  background: #ffffff;
+  font-size: 1rem;
+  color: var(--text);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(79, 70, 229, 0.7);
+  box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.1);
 }
 
 textarea {
-  min-height: 80px;
+  min-height: 100px;
+  resize: vertical;
+}
+
+.blocos {
+  display: grid;
+  gap: 24px;
 }
 
 .bloco {
-  border: 1px solid #ccc;
-  padding: 16px;
-  margin-bottom: 20px;
-  border-radius: 8px;
+  padding: 24px;
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 .bloco-topo {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 24px;
 }
 
 .pergunta {
-  border: 1px dashed #999;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 20px;
+  border-radius: 20px;
+  margin-bottom: 18px;
+  background: #ffffff;
 }
 
-.opcoes {
-  margin-top: 12px;
+.pergunta:not(:last-child) {
+  margin-bottom: 20px;
 }
 
-.opcao {
+.sessao-condicional,
+.opcoes,
+.equacao-box {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.opcoes h4 {
+  margin: 0 0 14px;
+  color: var(--primary);
+}
+
+.opcao,
+.variavel-item {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.opcao button,
+.variavel-item button {
+  grid-column: span 1;
+  justify-self: start;
+}
+
+.condicional {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.condicional span {
+  color: var(--muted);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-weight: 700;
+  color: var(--primary-strong);
 }
 
 .acoes,
 .acoes-pergunta,
 .rodape-acoes {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-top: 18px;
 }
 
 button {
-  padding: 8px 12px;
+  padding: 12px 18px;
   cursor: pointer;
   border: none;
-  background: #222;
   color: white;
-  border-radius: 6px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 button:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(79, 70, 229, 0.28);
 }
 
 .danger {
-  background: #c62828;
+  background: #dc2626;
 }
 
-.btn-bloco {
+.btn-estrela {
+  background: rgba(79, 70, 229, 0.1);
+  color: #4338ca;
+  box-shadow: none;
+}
+
+.btn-estrela.ativo {
+  background: #4338ca;
+  color: white;
+}
+
+.btn-bloco,
+.rodape-acoes button {
   margin-top: 10px;
 }
 
 pre {
-  background: #f4f4f4;
-  padding: 16px;
+  background: #eef2ff;
+  padding: 22px;
   overflow-x: auto;
-  border-radius: 8px;
+  border-radius: 22px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
 }
 
-.variavel-item {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+@media (max-width: 1024px) {
+  .bloco-topo {
+    grid-template-columns: 1fr;
+  }
+
+  .opcao,
+  .variavel-item {
+    grid-template-columns: 1fr;
+  }
 }
 
-.equacao-box {
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #fafafa;
-}
+@media (max-width: 720px) {
+  .container {
+    padding: 18px;
+  }
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 10px;
+  .topo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .formulario,
+  .bloco,
+  .equacao-box,
+  pre {
+    padding: 22px;
+  }
+
+  .acoes,
+  .acoes-pergunta,
+  .rodape-acoes {
+    justify-content: flex-start;
+  }
 }
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
