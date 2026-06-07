@@ -21,7 +21,7 @@
 
       <div class="campo">
         <label>Identificador:</label>
-        <input required pattern="^[a-z0-9_]+$" :disabled="questionario.temRespostas" v-model="questionario.idInterno" type="text"/>
+        <input required pattern="^[a-z0-9_]+$" v-model="questionario.idInterno" type="text"/>
         <small style="color: #666;">Apenas letras, números e underscore (_).</small>
       </div>
 
@@ -44,7 +44,7 @@
            <!--Talvez não seja necessário um campo de identificação e podemos gerar automaticamente-->
            <div class="campo">
             <label>Identificador</label>
-            <input required pattern="^[a-z0-9_]+$" :disabled="questionario.temRespostas" v-model="bloco.idInterno" type="text"/>
+            <input required pattern="^[a-z0-9_]+$" v-model="bloco.idInterno" type="text"/>
             <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
            <div class="campo">
@@ -57,14 +57,14 @@
            </div>
            
            <div class="acoes">
-           <button class="danger" :disabled="questionario.temRespostas" @click="removerBloco(bIdx)" v-if="bloco.tipo !== 'identificacao'">Excluir</button>
+           <button class="danger" @click="removerBloco(bIdx)" v-if="bloco.tipo !== 'identificacao'">Excluir</button>
           </div>
         </div>
 
         <div v-for="(p, pIdx) in bloco.perguntas" :key="p.uid" class="pergunta">
            <div class="campo">
             <label>Identificador</label>
-            <input required pattern="^[a-z0-9_]+$" :disabled="questionario.temRespostas" v-model="p.idInterno"/>
+            <input required pattern="^[a-z0-9_]+$" v-model="p.idInterno"/>
             <small style="color: #666;">Apenas letras, números e underscore (_).</small>
            </div>
 
@@ -166,11 +166,11 @@
             >
               {{ bloco.primeiro === p.uid ? '★ Primeiro' : '☆ Definir como primeiro' }}
             </button>
-            <button class="danger" :disabled="questionario.temRespostas" @click="removerPergunta(bIdx, pIdx)">Remover</button>
+            <button class="danger" @click="removerPergunta(bIdx, pIdx)">Remover</button>
           </div>
         </div>
 
-        <button :disabled="questionario.temRespostas" @click="adicionarPergunta(bIdx)">+ Nova Pergunta</button>
+        <button @click="adicionarPergunta(bIdx)">+ Nova Pergunta</button>
         <!-- Perguntas pré-setadas -->
         <div v-if="bloco.tipo === 'identificacao'">
           <button @click="menuPresetQuestions = !menuPresetQuestions">{{ menuPresetQuestions ? 'Ocultar Perguntas de Identificação' : 'Adicionar Perguntas de Identificação' }}</button>
@@ -203,7 +203,7 @@
         </div>
       </div>
       
-      <button class="btn-bloco" :disabled="questionario.temRespostas" @click="adicionarBloco()">+ Criar novo bloco</button>
+      <button class="btn-bloco" @click="adicionarBloco()">+ Criar novo bloco</button>
     </section>
 
     <section class="rodape-acoes">

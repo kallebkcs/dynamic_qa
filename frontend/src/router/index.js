@@ -60,10 +60,9 @@ const router = createRouter({
       path: '/questionario/:id',
       name: 'questionario',
       component: QuestionarioView,
-
-      meta: {
-        requiresAuth: true
-      }
+      //meta: {
+      //  requiresAuth: true
+      //}
     },
 
     {

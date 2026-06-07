@@ -31,7 +31,10 @@ const questionarioSchema = new mongoose.Schema({
     criadoPor: String,
     primeiro: String,
     blocos: [blocoSchema],
-    temRespostas: { type: Boolean, default: false }
+    vinculos: [{
+        idCoordenador: { type: String, required: true },
+        idPlanilha: { type: String, required: true }
+    }]
 })
 
 const Questionario = mongoose.model('Questionario', questionarioSchema);

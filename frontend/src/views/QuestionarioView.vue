@@ -18,8 +18,6 @@ const respostas = ref({});
 const pesoAcumulado = ref(0);
 
 // Submissão
-const respostasUsuario = ref({});
-const diagnosticoFinal = ref("");
 const enviando = ref(false);
 
 // Modal de Resultado
@@ -36,6 +34,13 @@ const perguntaAtual = computed(() =>
   blocoAtual.value?.perguntas.find(p => p.uid === uidPerguntaAtiva.value)
 );
 
+// Relação com a planilha
+const idPlanilhaAtiva = ref(null);
+// Lembre-se de puxar o ID do coordenador do mesmo lugar que você vai usar na Home
+const idCoordenador = ref('id_do_coordenador_atual');
+
+
+
 // Lógica de carregamento de dados
 const carregarDados = async () => {
   try {
@@ -44,6 +49,13 @@ const carregarDados = async () => {
     const dados = await response.json();
     
     questionario.value = dados;
+
+    // Encontra a planilha 
+    const vinculo = dados.vinculos?.find(v => v.idCoordenador === idCoordenador.value);
+    idPlanilhaAtiva.value = vinculo ? vinculo.idPlanilha : null;
+    if (!idPlanilhaAtiva.value) {
+      alert("AVISO: Este coordenador ainda não vinculou uma planilha para este questionário! As respostas não serão salvas");
+    }
 
     // Define o bloco inicial conforme definido no questionário 
     uidBlocoAtivo.value = dados.primeiro;
@@ -334,7 +346,7 @@ const enviarRespostas = async (diagnostico) => {
 
   const payload = {
     idQuestionario: questionario.value.idInterno,
-    idPlanilha: '1iyXTLEwhqrF7XNu-3Au4FLOWbF2hn9bQm0iqtidC5Pk', // por enquanto estático. TODO: alterar para dinamico
+    idPlanilha: idPlanilhaAtiva.value,
     diagnostico: diagnostico, 
     respostas: respostasUsuario
   };
@@ -442,7 +454,7 @@ onMounted(carregarDados)
     </div>
   </section>
 
-  <!-- MODAL DE RESULTADO -->
+  <!-- MODAL DE RESULTADO (necessário?) -->
   <div v-if="mostrarResultado" class="modal-overlay">
     <div class="modal-resultado" :class="tipoResultado">
       <div class="icone-resultado">

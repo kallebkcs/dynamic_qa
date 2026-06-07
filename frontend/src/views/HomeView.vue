@@ -5,11 +5,69 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const questionarios = ref([])
 
+// Considerando que tenho o idCoordenador
+const idCoordenador = ref('id_do_coordenador_atual');
+
+// Modal de vínculo de questionário
+const modalAberto = ref(false);
+const idPlanilhaInput = ref('');
+const questionarioAlvo = ref(null);
+
+const abrirModal = (questionario) => {
+  questionarioAlvo.value = questionario;
+  idPlanilhaInput.value = questionario.idPlanilhaCoordenador || ''; // Já preenche se for alteração
+  modalAberto.value = true;
+};
+
+const fecharModal = () => {
+  modalAberto.value = false;
+  idPlanilhaInput.value = '';
+  questionarioAlvo.value = null;
+};
+
+const salvarVinculo = async () => {
+  if (!idPlanilhaInput.value.trim()) {
+    alert("Coloque um ID válido antes de salvar.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:3000/api/questionarios/${questionarioAlvo.value.idInterno}/planilha`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idPlanilha: idPlanilhaInput.value.trim(), idCoordenador: idCoordenador.value })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      // Atualiza visualmente o questionário na lista sem precisar recarregar a página
+      questionarioAlvo.value.idPlanilhaCoordenador = idPlanilhaInput.value.trim();
+      alert("Planilha vinculada e cabeçalhos gerados!");
+      fecharModal();
+    } else {
+      const err = await res.json();
+      alert(`Erro: ${err.erro}`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Falha ao comunicar com o servidor.");
+  }
+};
+
 // Busca os dados do backend
 const carregarQuestionarios = async () => {
   try {
     const response = await fetch('http://localhost:3000/api/questionarios')
-    questionarios.value = await response.json()
+    if (response.ok) {
+      const dados = await response.json();
+      questionarios.value = dados.map(q => {
+        const vinculo = q.vinculos?.find(v => v.idCoordenador === idCoordenador.value);
+        return {
+          ...q,
+          idPlanilhaCoordenador: vinculo ? vinculo.idPlanilha : null
+        };
+      });
+    }
   } catch (error) {
     console.error("Erro ao carregar questionários:", error)
   }
@@ -64,6 +122,11 @@ const excluirQuestionario = async (id) => {
           </button>
           <button @click="router.push(`/edicao-questionario/${q.idInterno}`)">EDITAR</button>
           <button @click="router.push({path: '/criacao-questionario', query: {clone: q.idInterno}})">EDITAR CÓPIA</button>
+          <button v-if="!q.idPlanilhaCoordenador" @click="abrirModal(q)">VINCULAR PLANILHA</button>
+          <div v-else>
+            <a :href="`https://docs.google.com/spreadsheets/d/${q.idPlanilhaCoordenador}/edit`" target="_blank">ABRIR PLANILHA</a>
+            <button @click="abrirModal(q)">ALTERAR PLANILHA</button>
+          </div>
           <button class="danger" @click="excluirQuestionario(q.idInterno)">EXCLUIR</button>
         </div>
       </div>
@@ -71,6 +134,25 @@ const excluirQuestionario = async (id) => {
 
     <button @click="router.push('/criacao-questionario')">Criar questionário</button>
   </main>
+
+  <div v-if="modalAberto" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Vincular Planilha do Google</h3>
+      <p>
+        1. Crie uma planilha em branco no Google Sheets.<br>
+        2. Compartilhe-a como <strong>"Editor"</strong> com o e-mail da nossa API: <br>
+        <code>planilhas@dynamic-qa.iam.gserviceaccount.com</code><br>
+        3. Cole o ID da planilha abaixo (as letras aleatórias após o <code>/spreadsheets/d/</code>).
+      </p>
+      
+      <input type="text" v-model="idPlanilhaInput" placeholder="Ex: 1BxiMVs0XRY..." />
+      
+      <div class="modal-acoes">
+        <button @click="fecharModal">CANCELAR</button>
+        <button @click="salvarVinculo">SALVAR VÍNCULO</button>
+    </div>
+  </div>
+</div>
 </template>
 
 <style scoped>

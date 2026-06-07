@@ -9,5 +9,6 @@ router.put('/:id', controller.atualizarQuestionario)
 router.delete('/:id', controller.excluirQuestionario);
 router.post('/', controller.salvarQuestionario);
 router.post('/submit', controller.enviarResposta);
+router.patch('/:id/planilha', controller.vincularPlanilha);
 
 module.exports = router;
