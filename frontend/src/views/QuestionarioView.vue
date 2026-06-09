@@ -106,7 +106,7 @@ const redirecionador = (destino) => {
     if (typeof destino.proximo === 'object' && destino.proximo.diagnostico) {
       //alert("Diagnóstico: " + destino.proximo.diagnostico);//Finalizar questionário
       enviarRespostas(destino.proximo.diagnostico)
-      //router.push('/');
+      textoResultado.value = destino.proximo.diagnostico;
       return;
     }
 
@@ -362,8 +362,8 @@ const enviarRespostas = async (diagnostico) => {
     });
 
     if (res.ok) {
-      alert("Diagnóstico: " + diagnostico);
-      router.push('/'); 
+      //alert("Diagnóstico: " + diagnostico);
+      mostrarResultado.value = true;
     } else {
       const erro = await res.json();
       alert(`O servidor recusou o pacote: ${erro.erro || 'Motivo desconhecido'}`);
@@ -457,15 +457,16 @@ onMounted(carregarDados)
   <!-- MODAL DE RESULTADO (necessário?) -->
   <div v-if="mostrarResultado" class="modal-overlay">
     <div class="modal-resultado" :class="tipoResultado">
+      <!--
       <div class="icone-resultado">
         <span v-if="tipoResultado === 'positivo'">✓</span>
         <span v-else>✕</span>
-      </div>
+      </div> -->
       <h1 class="titulo-resultado">
-        {{ tipoResultado === 'positivo' ? 'POSITIVO' : 'NEGATIVO' }}
+        {{ textoResultado }}
       </h1>
-      <p class="texto-resultado">{{ textoResultado }}</p>
-      <button @click="mostrarResultado = false" class="btn-fechar">OK</button>
+      <!-- <p class="texto-resultado">{{ textoResultado }}</p> -->
+      <button @click="mostrarResultado = false; router.push('/');" class="btn-fechar">OK</button>
     </div>
   </div>
 </main>

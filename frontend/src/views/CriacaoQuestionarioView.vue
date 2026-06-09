@@ -1,11 +1,11 @@
 <template>
   <div class="container">
     <header class="topo">
-      <div>
+      <!-- <div>
         <h1>Criação de Questionário</h1>
-        <!-- <div class="usuario">Olá, Usuario</div> TODO: Lógica de Cadastro e Login-->
+        <div class="usuario">Olá, Usuario</div> TODO: Lógica de Cadastro e Login
       </div>
-      <router-link to="/coordenador" class="sair-btn">Voltar</router-link>
+      <router-link to="/coordenador" class="sair-btn">Voltar</router-link> -->
       <h1>{{ modoEdicao ? 'Edição de Questionário' : 'Criação de Questionário' }}</h1>
       <button @click="router.push('/')">VOLTAR</button>
       <!-- <div class="usuario">Olá, Usuario</div> -->
