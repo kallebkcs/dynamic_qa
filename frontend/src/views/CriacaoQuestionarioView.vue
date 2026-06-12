@@ -714,7 +714,7 @@ const salvarQuestionario = async () => {
       router.push('/');
     } else {
       const erro = await res.json();
-      alert("ERRO: " + erro);
+      alert("ERRO: " + erro.erro);
     }
   } catch (err) {
     console.log('ERRO: ', err)

@@ -70,10 +70,10 @@ const router = createRouter({
       name: 'criacao-questionario',
       component: CriacaoQuestionarioView,
 
-      meta: {
+      /*meta: {
         requiresAuth: true,
         perfil: 'coordenador'
-      }
+      }*/
     },
     
     {

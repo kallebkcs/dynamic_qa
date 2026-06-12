@@ -1,11 +1,6 @@
-const mongoose = require("mongoose");
-const Questionario = require("./src/models/Questionario.js")
-const connectDB = require("./src/config/db.js")
-
-// JSON QUESTIONARIO
-const questionarioSarcopenia = {
-  "titulo": "Sarcopenia v2",
-  "idInterno": "sarcopenia_v2",
+{
+  "titulo": "Sarcopenia",
+  "idInterno": "sarcopenia",
   "descricao": "Questionário para diagnóstico de Sarcopenia, amparado pelo European Working Group on Sarcopenia in Older People 2 (EWGSOP2)",
   "primeiro": "uid_bloco_1780422903459_w1i85",
   "blocos": [
@@ -21,13 +16,17 @@ const questionarioSarcopenia = {
           "idInterno": "idp_nome",
           "escopo": "Nome:",
           "tipo": "texto",
-          "proximo": "uid_preset_1780422979310_ly6dp"
+          "proximo": "uid_preset_1780422979310_ly6dp",
+          "variaveis": [],
+          "_id": "6a2336288690a02d65df72aa"
         },
         {
           "uid": "uid_preset_1780422979309_xk05j",
           "idInterno": "idp_sexo",
           "escopo": "Sexo:",
           "tipo": "escolha_unica",
+          "proximo": "uid_preset_1780422979310_bi5f3",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Masculino"
@@ -36,14 +35,16 @@ const questionarioSarcopenia = {
               "opcao": "Feminino"
             }
           ],
-          "proximo": "uid_preset_1780422979310_bi5f3"
+          "_id": "6a2336288690a02d65df72ab"
         },
         {
           "uid": "uid_preset_1780422979310_ly6dp",
           "idInterno": "idp_idade",
           "escopo": "Idade:",
           "tipo": "numerico",
-          "proximo": "uid_preset_1780422979309_xk05j"
+          "proximo": "uid_preset_1780422979309_xk05j",
+          "variaveis": [],
+          "_id": "6a2336288690a02d65df72ac"
         },
         {
           "uid": "uid_preset_1780422979310_9k4o5",
@@ -52,20 +53,26 @@ const questionarioSarcopenia = {
           "tipo": "numerico",
           "proximo": {
             "proximo": "uid_bloco_1780423054457_1shjt"
-          }
+          },
+          "variaveis": [],
+          "_id": "6a2336288690a02d65df72ad"
         },
         {
           "uid": "uid_preset_1780422979310_2ntxc",
           "idInterno": "idp_altura",
           "escopo": "Altura (m):",
           "tipo": "numerico",
-          "proximo": "uid_preset_1780422979310_9k4o5"
+          "proximo": "uid_preset_1780422979310_9k4o5",
+          "variaveis": [],
+          "_id": "6a2336288690a02d65df72ae"
         },
         {
           "uid": "uid_preset_1780422979310_bi5f3",
           "idInterno": "idp_raca",
           "escopo": "Raça:",
           "tipo": "escolha_unica",
+          "proximo": "uid_preset_1780422979310_2ntxc",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Branco"
@@ -77,9 +84,10 @@ const questionarioSarcopenia = {
               "opcao": "Asiatico"
             }
           ],
-          "proximo": "uid_preset_1780422979310_2ntxc"
+          "_id": "6a2336288690a02d65df72af"
         }
-      ]
+      ],
+      "_id": "6a2336288690a02d65df72a9"
     },
     {
       "uid": "uid_bloco_1780423054457_1shjt",
@@ -87,12 +95,30 @@ const questionarioSarcopenia = {
       "titulo": "SARC-CaIF",
       "tipo": "peso",
       "primeiro": "uid_pergunta_1780423086659_1nuvn",
+      "calculoPeso": {
+        "regra": "maior_que",
+        "limiar": 11,
+        "verdadeiro": {
+          "proximo": {
+            "proximo": "uid_bloco_1780423398858_raxqs"
+          }
+        },
+        "falso": {
+          "proximo": {
+            "proximo": {
+              "diagnostico": "Negativo"
+            }
+          }
+        }
+      },
       "perguntas": [
         {
           "uid": "uid_pergunta_1780423086659_1nuvn",
           "idInterno": "forca_carga",
           "escopo": "O quanto de dificuldade você tem para levantar e carregar 5kg?",
           "tipo": "escolha_unica",
+          "proximo": "uid_pergunta_1780423166316_46axj",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Nenhuma",
@@ -113,13 +139,15 @@ const questionarioSarcopenia = {
               }
             }
           ],
-          "proximo": "uid_pergunta_1780423166316_46axj"
+          "_id": "6a2336288690a02d65df72b1"
         },
         {
           "uid": "uid_pergunta_1780423166316_46axj",
           "idInterno": "ajuda_caminhar",
           "escopo": "O quanto de dificuldade você tem para atravessar um cômodo?",
           "tipo": "escolha_unica",
+          "proximo": "uid_pergunta_1780423213923_f1jgy",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Nenhuma",
@@ -140,13 +168,15 @@ const questionarioSarcopenia = {
               }
             }
           ],
-          "proximo": "uid_pergunta_1780423213923_f1jgy"
+          "_id": "6a2336288690a02d65df72b2"
         },
         {
           "uid": "uid_pergunta_1780423213923_f1jgy",
           "idInterno": "levantar_cadeira",
           "escopo": "O quanto de dificuldade você tem para levantar de uma cama ou cadeira?",
           "tipo": "escolha_unica",
+          "proximo": "uid_pergunta_1780423259955_etqq7",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Nenhuma",
@@ -167,13 +197,15 @@ const questionarioSarcopenia = {
               }
             }
           ],
-          "proximo": "uid_pergunta_1780423259955_etqq7"
+          "_id": "6a2336288690a02d65df72b3"
         },
         {
           "uid": "uid_pergunta_1780423259955_etqq7",
           "idInterno": "subir_escadas",
           "escopo": "O quanto de dificuldade você tem para subir um lance de escadas de 10 degraus?",
           "tipo": "escolha_unica",
+          "proximo": "uid_pergunta_1780423293827_tffxy",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Nenhuma",
@@ -194,13 +226,15 @@ const questionarioSarcopenia = {
               }
             }
           ],
-          "proximo": "uid_pergunta_1780423293827_tffxy"
+          "_id": "6a2336288690a02d65df72b4"
         },
         {
           "uid": "uid_pergunta_1780423293827_tffxy",
           "idInterno": "quedas",
           "escopo": "Quantas vezes você caiu no último ano?",
           "tipo": "escolha_unica",
+          "proximo": "uid_pergunta_1780423337007_ktga2",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Nenhuma",
@@ -221,7 +255,7 @@ const questionarioSarcopenia = {
               }
             }
           ],
-          "proximo": "uid_pergunta_1780423337007_ktga2"
+          "_id": "6a2336288690a02d65df72b5"
         },
         {
           "uid": "uid_pergunta_1780423337007_ktga2",
@@ -229,6 +263,8 @@ const questionarioSarcopenia = {
           "escopo": "Circunferência da Panturrilha (CP)",
           "tipo": "numerico",
           "contexto": "uid_preset_1780422979309_xk05j",
+          "proximo": "calculoPeso",
+          "variaveis": [],
           "configuracao": {
             "regra": "maior_que",
             "limiar": {
@@ -242,25 +278,10 @@ const questionarioSarcopenia = {
               "peso": 10
             }
           },
-          "proximo": "calculoPeso"
+          "_id": "6a2336288690a02d65df72b6"
         }
       ],
-      "calculoPeso": {
-        "regra": "maior_que",
-        "limiar": 11,
-        "verdadeiro": {
-          "proximo": {
-            "proximo": "uid_bloco_1780423398858_raxqs"
-          }
-        },
-        "falso": {
-          "proximo": {
-            "proximo": {
-              "diagnostico": "Negativo"
-            }
-          }
-        }
-      }
+      "_id": "6a2336288690a02d65df72b0"
     },
     {
       "uid": "uid_bloco_1780423398858_raxqs",
@@ -274,6 +295,7 @@ const questionarioSarcopenia = {
           "idInterno": "escolha_forca",
           "escopo": "Escolha um método para avaliação.",
           "tipo": "escolha_unica",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "Força de Preensão Palmar com Dinamômetro",
@@ -287,7 +309,8 @@ const questionarioSarcopenia = {
                 "proximo": "uid_pergunta_1780423619065_a1v5u"
               }
             }
-          ]
+          ],
+          "_id": "6a2336288690a02d65df72b8"
         },
         {
           "uid": "uid_pergunta_1780423618133_zs5lg",
@@ -295,6 +318,7 @@ const questionarioSarcopenia = {
           "escopo": "Quantos kg foram registrados no dinamômetro após o teste?",
           "tipo": "numerico",
           "contexto": "uid_preset_1780422979309_xk05j",
+          "variaveis": [],
           "configuracao": {
             "regra": "menor_que",
             "limiar": {
@@ -313,13 +337,15 @@ const questionarioSarcopenia = {
                 }
               }
             }
-          }
+          },
+          "_id": "6a2336288690a02d65df72b9"
         },
         {
           "uid": "uid_pergunta_1780423619065_a1v5u",
           "idInterno": "teste_cadeira",
           "escopo": "Quantos segundos o paciente levou para executar o movimento de sentar e levantar da cadeira 5x?",
           "tipo": "numerico",
+          "variaveis": [],
           "configuracao": {
             "regra": "maior_que",
             "limiar": 15,
@@ -335,9 +361,11 @@ const questionarioSarcopenia = {
                 }
               }
             }
-          }
+          },
+          "_id": "6a2336288690a02d65df72ba"
         }
-      ]
+      ],
+      "_id": "6a2336288690a02d65df72b7"
     },
     {
       "uid": "uid_bloco_1780423655584_oy15w",
@@ -351,6 +379,7 @@ const questionarioSarcopenia = {
           "idInterno": "escolha_massa",
           "escopo": "Escolha um método para avaliação.",
           "tipo": "escolha_unica",
+          "variaveis": [],
           "configuracao": [
             {
               "opcao": "MMEA",
@@ -370,7 +399,8 @@ const questionarioSarcopenia = {
                 "proximo": "uid_pergunta_1780423808727_46sis"
               }
             }
-          ]
+          ],
+          "_id": "6a2336288690a02d65df72bc"
         },
         {
           "uid": "uid_pergunta_1780423790005_rwp8y",
@@ -378,6 +408,7 @@ const questionarioSarcopenia = {
           "escopo": "Qual o valor de MMEA medido (em kg)?",
           "tipo": "numerico",
           "contexto": "uid_preset_1780422979309_xk05j",
+          "variaveis": [],
           "configuracao": {
             "regra": "menor_que",
             "limiar": {
@@ -396,7 +427,8 @@ const questionarioSarcopenia = {
                 }
               }
             }
-          }
+          },
+          "_id": "6a2336288690a02d65df72bd"
         },
         {
           "uid": "uid_pergunta_1780423801434_2ojca",
@@ -404,6 +436,7 @@ const questionarioSarcopenia = {
           "escopo": "Qual o valor de IMMEA medido?",
           "tipo": "numerico",
           "contexto": "uid_preset_1780422979309_xk05j",
+          "variaveis": [],
           "configuracao": {
             "regra": "menor_que",
             "limiar": {
@@ -422,7 +455,8 @@ const questionarioSarcopenia = {
                 }
               }
             }
-          }
+          },
+          "_id": "6a2336288690a02d65df72be"
         },
         {
           "uid": "uid_pergunta_1780423808727_46sis",
@@ -430,6 +464,38 @@ const questionarioSarcopenia = {
           "escopo": "Eis o valor obtido pela Equação de Lee",
           "tipo": "equacao",
           "contexto": "uid_preset_1780422979309_xk05j",
+          "equacao": "\\frac{0.244P + 7.8h + 6.6S - 0.098I + R - 3.3}{h^2}",
+          "variaveis": [
+            {
+              "uid": "uid_preset_1780422979310_9k4o5",
+              "variavel": "P"
+            },
+            {
+              "uid": "uid_preset_1780422979310_2ntxc",
+              "variavel": "h"
+            },
+            {
+              "uid": "uid_preset_1780422979309_xk05j",
+              "variavel": "S",
+              "mapeamento": {
+                "Masculino": 1,
+                "Feminino": 0
+              }
+            },
+            {
+              "uid": "uid_preset_1780422979310_ly6dp",
+              "variavel": "I"
+            },
+            {
+              "uid": "uid_preset_1780422979310_bi5f3",
+              "variavel": "R",
+              "mapeamento": {
+                "Branco": 0,
+                "Negro": 1.4,
+                "Asiatico": -1.2
+              }
+            }
+          ],
           "configuracao": {
             "regra": "menor_que",
             "limiar": {
@@ -449,43 +515,10 @@ const questionarioSarcopenia = {
               }
             }
           },
-          "equacao": "\\frac{0.244P + 7.8h + 6.6S - 0.098I + R - 3.3}{h^2}",
-          "variaveis": [
-            {
-              "uid": "uid_preset_1780422979310_9k4o5",
-              "variavel": "P",
-              "mapeamento": {}
-            },
-            {
-              "uid": "uid_preset_1780422979310_2ntxc",
-              "variavel": "h",
-              "mapeamento": {}
-            },
-            {
-              "uid": "uid_preset_1780422979309_xk05j",
-              "variavel": "S",
-              "mapeamento": {
-                "Masculino": 1,
-                "Feminino": 0
-              }
-            },
-            {
-              "uid": "uid_preset_1780422979310_ly6dp",
-              "variavel": "I",
-              "mapeamento": {}
-            },
-            {
-              "uid": "uid_preset_1780422979310_bi5f3",
-              "variavel": "R",
-              "mapeamento": {
-                "Branco": 0,
-                "Negro": 1.4,
-                "Asiatico": -1.2
-              }
-            }
-          ]
+          "_id": "6a2336288690a02d65df72bf"
         }
-      ]
+      ],
+      "_id": "6a2336288690a02d65df72bb"
     },
     {
       "uid": "uid_bloco_1780423862365_w2fsn",
@@ -499,6 +532,7 @@ const questionarioSarcopenia = {
           "idInterno": "velocidade_marcha",
           "escopo": "Quanto tempo o paciente levou para cumprir uma caminhada de 4 metros?",
           "tipo": "numerico",
+          "variaveis": [],
           "configuracao": {
             "regra": "maior_que",
             "limiar": 5,
@@ -516,21 +550,12 @@ const questionarioSarcopenia = {
                 }
               }
             }
-          }
+          },
+          "_id": "6a2336288690a02d65df72c1"
         }
-      ]
+      ],
+      "_id": "6a2336288690a02d65df72c0"
     }
-  ]
+  ],
+  "temRespostas": true
 }
-
-const seed = async () => {
-    await connectDB(); // conexão com a database
-    await Questionario.deleteMany({}); // limpeza inicial
-    await Questionario.create(questionarioSarcopenia)
-        .then(() => console.log('Questionário criado com sucesso'))
-        .catch((err) => console.log('ERRO! ',  err));
-
-    mongoose.connection.close();
-}
-
-seed();
