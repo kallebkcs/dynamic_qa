@@ -10,7 +10,7 @@ Sistema de gerenciamento de questionários dinâmicos direcionados (mas não lim
 * Validação automática de estrutura.
 * Banco de dados local embutido e auto-configurável.
 
-## 📥 Como usar
-1. Clique no botão de **Download .EXE** ali em cima.
+## Como usar
+1. Clique no botão de **Download .EXE** acima.
 2. Baixe o instalador da versão mais recente.
 3. Instale e pronto. O sistema é inicializado com o questionário de Sarcopenia e suas variações.
