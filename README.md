@@ -14,3 +14,6 @@ Sistema de gerenciamento de questionários dinâmicos direcionados (mas não lim
 1. Clique no botão de **Download .EXE** acima.
 2. Baixe o instalador da versão mais recente.
 3. Instale e pronto. O sistema é inicializado com o questionário de Sarcopenia e suas variações.
+
+## Tecnologias
+Vue.js, Node.js, Express, SQLite, Electron.
