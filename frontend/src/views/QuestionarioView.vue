@@ -1,9 +1,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AvisoToast from '@/components/AvisoToast.vue';
 
 const route = useRoute();
 const router = useRouter();
+
+// Toast
+const toastRef = ref(null);
 
 // Dados Brutos
 const questionario = ref(null);
@@ -19,6 +23,7 @@ const pesoAcumulado = ref(0);
 
 // Submissão
 const enviando = ref(false);
+const naoSalvou = ref(false);
 
 // Modal de Resultado
 const mostrarResultado = ref(false)
@@ -54,7 +59,8 @@ const carregarDados = async () => {
     const vinculo = dados.vinculos?.find(v => v.idCoordenador === idCoordenador.value);
     idPlanilhaAtiva.value = vinculo ? vinculo.idPlanilha : null;
     if (!idPlanilhaAtiva.value) {
-      alert("AVISO: Este coordenador ainda não vinculou uma planilha para este questionário! As respostas não serão salvas");
+      toastRef.value.mostrar("AVISO: Este coordenador ainda não vinculou uma planilha para este questionário! As respostas não serão salvas")
+      naoSalvou.value = true;
     }
 
     // Define o bloco inicial conforme definido no questionário 
@@ -104,7 +110,6 @@ const redirecionador = (destino) => {
   if (typeof destino === 'object' && destino !== null) {
     // Fim de questionário: paciente tem diagnóstico
     if (typeof destino.proximo === 'object' && destino.proximo.diagnostico) {
-      //alert("Diagnóstico: " + destino.proximo.diagnostico);//Finalizar questionário
       enviarRespostas(destino.proximo.diagnostico)
       textoResultado.value = destino.proximo.diagnostico;
       return;
@@ -154,9 +159,6 @@ const resolverLogica = (pergunta) => {
         : Number(valorAvaliado) < limiar;
         
       const alvo = atende ? pergunta.configuracao.verdadeiro : pergunta.configuracao.falso;
-      console.log(pergunta.configuracao);
-      console.log('RESULTADO: ', Number(valorAvaliado))
-      console.log('ALVO: ', alvo);
       pesoAcumulado.value += Number(alvo?.peso ?? 0);
     }
   }
@@ -351,8 +353,6 @@ const enviarRespostas = async (diagnostico) => {
     respostas: respostasUsuario
   };
 
-  console.log(payload);
-
   enviando.value = true;
   try {
     const res = await fetch('http://localhost:3000/api/questionarios/submit', {
@@ -362,15 +362,13 @@ const enviarRespostas = async (diagnostico) => {
     });
 
     if (res.ok) {
-      //alert("Diagnóstico: " + diagnostico);
       mostrarResultado.value = true;
     } else {
       const erro = await res.json();
-      alert(`O servidor recusou o pacote: ${erro.erro || 'Motivo desconhecido'}`);
+      toastRef.value.mostrar(`O servidor recusou o pacote: ${erro.erro || 'Motivo desconhecido'}`, "erro")
     }
   } catch (err) {
-    alert("Erro de conexão. Verifique se o back-end está rodando.");
-    console.error(err);
+    toastRef.value.mostrar("Erro de conexão.", "erro")
   } finally {
     enviando.value = false;
   }
@@ -380,6 +378,8 @@ onMounted(carregarDados)
 </script>
 
 <template>
+  <!-- Fixed component -->
+  <AvisoToast ref="toastRef" />
   <div v-if="carregando">Carregando questionário...</div>
   <main v-else-if="questionario" class="visualizer">
   <header v-if="blocoAtual">
@@ -462,9 +462,11 @@ onMounted(carregarDados)
         <span v-if="tipoResultado === 'positivo'">✓</span>
         <span v-else>✕</span>
       </div> -->
-      <h1 class="titulo-resultado">
+      <h1 class="titulo-resultado">DIAGNÓSTICO</h1>
+      <h2 class="texto-resultado">
         {{ textoResultado }}
-      </h1>
+      </h2>
+      <p v-if="!naoSalvou">Respostas salvas na planilha.</p>
       <!-- <p class="texto-resultado">{{ textoResultado }}</p> -->
       <button @click="mostrarResultado = false; router.push('/');" class="btn-fechar">OK</button>
     </div>
@@ -883,7 +885,7 @@ input[type="number"]:focus {
 }
 
 .titulo-resultado {
-  font-size: 3.5em;
+  font-size: 2.5em;
   font-weight: 900;
   margin-bottom: 20px;
   letter-spacing: 2px;
@@ -907,7 +909,7 @@ input[type="number"]:focus {
 }
 
 .texto-resultado {
-  font-size: 1.3em;
+  font-size: 2em;
   color: #374151;
   margin-bottom: 40px;
   line-height: 1.6;

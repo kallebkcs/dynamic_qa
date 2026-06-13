@@ -38,9 +38,9 @@ const seedDatabase = async (db) => {
 const connectDB = async () => {
   if (dbInstance) return dbInstance;
   
-  // Abre (ou cria) o arquivo do banco local
+  const dbPath = process.env.DB_PATH || './data/database.sqlite';
   dbInstance = await open({
-    filename: 'data/database.sqlite', 
+    filename: dbPath, 
     driver: sqlite3.Database
   });
 

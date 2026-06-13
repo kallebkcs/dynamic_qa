@@ -1,4 +1,6 @@
 <template>
+  <!-- Fixed component -->
+  <AvisoToast ref="toastRef" />
   <div class="container">
     <header class="topo">
       <!-- <div>
@@ -7,7 +9,6 @@
       </div>
       <router-link to="/coordenador" class="sair-btn">Voltar</router-link> -->
       <h1>{{ modoEdicao ? 'Edição de Questionário' : 'Criação de Questionário' }}</h1>
-      <button @click="router.push('/')">VOLTAR</button>
       <!-- <div class="usuario">Olá, Usuario</div> -->
     </header>
     
@@ -220,11 +221,15 @@ import BlocoLogica from '../components/BlocoLogica.vue';
 import TipoNumerico from '../components/TipoNumerico.vue';
 import TipoEscolha from '../components/TipoEscolha.vue';
 import TipoEquacao from '../components/TipoEquacao.vue';
+import AvisoToast from '@/components/AvisoToast.vue';
 import { presetQuestions } from '../utils/presetQuestions.js';
 import evaluatex from 'evaluatex';
 
 const router = useRouter();
 const route = useRoute();
+
+// Toast
+const toastRef = ref(null);
 
 // Controle de modo
 const modoEdicao = ref(false);
@@ -268,12 +273,17 @@ const carregarDadosEdicao = async (id, duplicar=false) => {
         questionario.value = preProcessamento(dadosBrutos);
       }
     } else {
-      alert("Questionário não encontrado. Redirecionando para a página inicial");
-      router.push('/');
+      router.push({
+        path: '/',
+        state: {
+          toastMsg: "Questionário não encontrado.",
+          toastTipo: "erro"
+        }
+      });
     }
   } catch (err) {
     console.error("ERRO ao buscar questionário: ", err);
-    alert("Erro de conexão ao carregar dados");
+    toastRef.value.mostrar("Erro de conexão ao carregar dados", "erro")
   }
 };
 
@@ -692,15 +702,15 @@ const salvarQuestionario = async () => {
 
   const erroValidacao = validarDados(jsonQuestionario);
   if (erroValidacao) {
-    alert("ERRO: " + erroValidacao);
-    return; // Aborta o salvamento sumariamente
+    toastRef.value.mostrar("ERRO: " + erroValidacao, "erro");
+    return;
   }
   salvando.value = true;
   try {
     const url = modoEdicao.value 
       ? `http://localhost:3000/api/questionarios/${idQuestionarioEdicao.value}`
       : 'http://localhost:3000/api/questionarios';
-      
+
     const metodo = modoEdicao.value ? 'PUT' : 'POST';
 
     const res = await fetch(url, {
@@ -710,15 +720,19 @@ const salvarQuestionario = async () => {
     });
 
     if (res.ok) { 
-      alert('Questionário salvo com sucesso') 
-      router.push('/');
+      router.push({
+        path: '/',
+        state: {
+          toastMsg: modoEdicao.value ? "Questionário editado com sucesso!" : "Questionário criado com sucesso!",
+          toastTipo: "sucesso"
+        }
+      });
     } else {
       const erro = await res.json();
-      alert("ERRO: " + erro.erro);
+      toastRef.value.mostrar("ERRO: " + erro.erro, "erro");
     }
   } catch (err) {
-    console.log('ERRO: ', err)
-    alert('ERRO: ' + err)
+    toastRef.value.mostrar("ERRO: " + erro.erro, "erro")
   } finally {
     salvando.value = false;
   }

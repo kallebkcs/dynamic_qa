@@ -2,10 +2,35 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.kalleb.dynamicqa",
+    "productName": "Dynamic QA",
+    "directories": {
+      "output": "installer"
+    },
+    "files": [
+      "**/*",
+      "data/seeds/**/*",
+      "!data/database.sqlite"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false, 
+      "allowToChangeInstallationDirectory": true, 
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Dynamic QA"
+    }
   },
   "keywords": [],
   "author": "",
@@ -18,6 +43,8 @@
     "sqlite3": "^6.0.1"
   },
   "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3",
     "nodemon": "^3.1.14"
   }
 }

@@ -9,11 +9,14 @@ const {connectDB} = require('./config/db');
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../../frontend/public')));
+app.use(express.static(path.join(__dirname, 'dist')));
+
+app.use('/api/questionarios', QuestionarioRoutes);
 connectDB().catch(err => console.error("Erro ao iniciar SQLite:", err));
 
-// usamos routes para deslocar a parte do roteamento pra outro arquivo
-app.use('/api/questionarios', QuestionarioRoutes);
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);

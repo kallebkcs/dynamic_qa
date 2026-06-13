@@ -1,9 +1,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import AvisoToast from '@/components/AvisoToast.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const router = useRouter()
 const questionarios = ref([])
+
+// Fixed Components
+const toastRef = ref(null);
+const confirmRef = ref(null);
 
 // Considerando que tenho o idCoordenador
 const idCoordenador = ref('id_do_coordenador_atual');
@@ -27,7 +33,7 @@ const fecharModal = () => {
 
 const salvarVinculo = async () => {
   if (!idPlanilhaInput.value.trim()) {
-    alert("Coloque um ID válido antes de salvar.");
+    toastRef.value.mostrar("Coloque um ID válido antes de salvar.", "erro")
     return;
   }
 
@@ -42,15 +48,15 @@ const salvarVinculo = async () => {
       const data = await res.json();
       // Atualiza visualmente o questionário na lista sem precisar recarregar a página
       questionarioAlvo.value.idPlanilhaCoordenador = idPlanilhaInput.value.trim();
-      alert("Planilha vinculada e cabeçalhos gerados!");
+      toastRef.value.mostrar("Planilha vinculada e cabeçalhos gerados!", "sucesso");
       fecharModal();
     } else {
       const err = await res.json();
-      alert(`Erro: ${err.erro}`);
+      toastRef.value.mostrar(`ERRO: ${err.erro}`, "erro");
     }
   } catch (err) {
     console.error(err);
-    alert("Falha ao comunicar com o servidor.");
+    toastRef.value.mostrar(`Falha ao comunicar com o servidor.`, "erro");
   }
 };
 
@@ -67,7 +73,17 @@ const fecharMenuAoClicarFora = (event) => {
 };
 
 onMounted(() => {
+  // Para Modal
   document.addEventListener('click', fecharMenuAoClicarFora);
+
+  // Para Toast vindo de questionários criados/editados
+  if (history.state && history.state.toastMsg) {
+    toastRef.value.mostrar(history.state.toastMsg, history.state.toastTipo || 'sucesso');
+    history.replaceState({ ...history.state, toastMsg: undefined, toastTipo: undefined }, document.title);
+  }
+
+  // Carregamento padrão
+  carregarQuestionarios();
 });
 
 onUnmounted(() => {
@@ -93,9 +109,6 @@ const carregarQuestionarios = async () => {
   }
 }
 
-// Executa ao abrir a página
-onMounted(carregarQuestionarios)
-
 // Função para navegar até a página do questionário específico
 const navegarParaQuestionario = (id) => {
   router.push(`/questionario/${id}`)
@@ -113,14 +126,14 @@ const exportarQuestionario = async (id, titulo) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${titulo || 'questionario_exportado'}.json`;
+    a.download = `${id || titulo || 'questionario_exportado'}.json`;
     a.click();
     
     // Faxina
     URL.revokeObjectURL(url);
   } catch (err) {
     console.error(err);
-    alert('Erro na exportação.');
+    toastRef.value.mostrar(`Erro na exportação.`, "erro");
   }
 };
 
@@ -129,9 +142,28 @@ const inputArquivo = ref(null);
 const modalConflitoAberto = ref(false);
 const novoIdInput = ref('');
 const questionarioPendente = ref(null);
+const espertinhoRef = ref(false);
 
 const abrirSeletorArquivo = () => {
   inputArquivo.value.click(); // Finge que o usuário clicou no input invisível
+};
+
+// Validação do questionário
+const validarEstruturaQuestionario = (q) => {
+  if (!q || typeof q !== 'object' || Array.isArray(q)) return false;
+  
+  if (!q.titulo || typeof q.titulo !== 'string' || q.titulo.trim() === '') return false;
+  if (!q.idInterno || typeof q.idInterno !== 'string' || q.idInterno.trim() === '') return false;
+
+  if (!Array.isArray(q.blocos) || q.blocos.length === 0) return false;
+
+  const temPerguntas = q.blocos.some(bloco => 
+    Array.isArray(bloco.perguntas) && bloco.perguntas.length > 0
+  );
+  
+  if (!temPerguntas) return false;
+
+  return true;
 };
 
 const processarImportacao = (event) => {
@@ -143,14 +175,19 @@ const processarImportacao = (event) => {
   reader.onload = async (e) => {
     try {
       const questionarioImportado = JSON.parse(e.target.result);
+
+      if (!validarEstruturaQuestionario(questionarioImportado)) {
+        toastRef.value.mostrar("O arquivo não corresponde a um questionário válido. Tente novamente.", "erro");
+        return;
+      }
+
       delete questionarioImportado._id;
       questionarioImportado.vinculos = []; // Nasce sem planilhas vinculadas
       
       tentarSalvarImportacao(questionarioImportado);
     } catch (err) {
-      alert('Isso aí não é um JSON válido. Tenta de novo.');
+      toastRef.value.mostrar("O arquivo está corrompido ou mal formatado.", "erro");
     } finally {
-      // Reseta o input para permitir importar o mesmo arquivo duas vezes seguidas se o usuário for teimoso
       event.target.value = ''; 
     }
   };
@@ -158,7 +195,7 @@ const processarImportacao = (event) => {
   reader.readAsText(arquivo);
 };
 
-const tentarSalvarImportacao = async (questionario) => {
+const tentarSalvarImportacao = async (questionario, espertinho=false) => {
   try {
     const res = await fetch('http://localhost:3000/api/questionarios', {
       method: 'POST',
@@ -167,7 +204,8 @@ const tentarSalvarImportacao = async (questionario) => {
     });
 
     if (res.ok) {
-      alert('Questionário importado com sucesso!');
+      toastRef.value.mostrar("Questionário importado com sucesso!", "sucesso");
+      espertinhoRef.value = false;
       fecharModalConflito();
       carregarQuestionarios();
     } else {
@@ -175,29 +213,30 @@ const tentarSalvarImportacao = async (questionario) => {
       
       // Verifica se é o erro de ID duplicado do nosso Controller
       if (res.status === 400 && erro.erro.includes('Um questionário com esse ID já existe')) {
+        if (espertinho) espertinhoRef.value = true;
         // Trava o questionário na memória e abre o modal pedindo um novo ID
         questionarioPendente.value = questionario;
         novoIdInput.value = questionario.idInterno + '_copia'; // Já dá uma sugestão amigável
         modalConflitoAberto.value = true;
       } else {
-        alert(`Erro ao importar: ${erro.erro}`);
+        toastRef.value.mostrar(`Erro ao importar: ${erro.erro}`, "erro");
       }
     }
   } catch (err) {
     console.error(err);
-    alert('Falha na comunicação com o banco de dados.');
+    toastRef.value.mostrar('Falha na comunicação com o banco de dados.', "erro");
   }
 };
 
 // Ações do Modal de Conflito
 const confirmarNovoId = () => {
   if (!novoIdInput.value.trim()) {
-    alert("Digite um identificador válido.");
+    toastRef.value.mostrar('Digite um identificador válido.', "erro");
     return;
   }
   // Atualiza o ID do objeto pendente e tenta salvar de novo
   questionarioPendente.value.idInterno = novoIdInput.value.trim();
-  tentarSalvarImportacao(questionarioPendente.value);
+  tentarSalvarImportacao(questionarioPendente.value, true);
 };
 
 const cancelarImportacao = () => {
@@ -212,20 +251,20 @@ const fecharModalConflito = () => {
 
 // Excluir questionário
 const excluirQuestionario = async (id) => {
-  if (!window.confirm("Você tem certeza que deseja apagar este questionário? Essa ação não tem volta.")) {
-    return;
-  }
+  // Confirmação
+  const temCerteza = await confirmRef.value.mostrar(`Tem certeza que deseja excluir este questionário? Essa ação não pode ser desfeita.`);
+  if (!temCerteza) return;
 
   try {
     const res = await fetch(`http://localhost:3000/api/questionarios/${id}`, {method: 'DELETE'});
     if (res.ok) {
-      alert('Questionário deletado com sucesso');
+      toastRef.value.mostrar('Questionário deletado com sucesso', "sucesso");
       questionarios.value = questionarios.value.filter(q => q.idInterno !== id);
     } else {
-      alert('Erro ao deletar questionário.')
+      toastRef.value.mostrar('Erro ao deletar questionário.', "erro");
     }
   } catch (err) {
-    alert('Erro de conexão: ' + err);
+    toastRef.value.mostrar('Erro de conexão: ' + err, "erro");
     console.error("Erro ao deletar questionário: ", err);
   }
 }
@@ -233,6 +272,10 @@ const excluirQuestionario = async (id) => {
 </script>
 
 <template>
+  <!-- Fixed Component -->
+  <AvisoToast ref="toastRef" />
+  <ConfirmModal ref="confirmRef" />
+
   <main class="home-view">
     <h2>Questionários</h2>
 
@@ -305,7 +348,7 @@ const excluirQuestionario = async (id) => {
       
       <input type="text" v-model="novoIdInput" pattern="^[a-z0-9_]+$" placeholder="Ex: meu-questionario-v2" />
       <small style="color: #666;">Apenas letras, números e underscore (_).</small>
-      
+      <p v-if="espertinhoRef" style="color: #F00;">Coloque um ID válido, por favor. Ou você está sendo um espertinho?</p>
       <div class="modal-acoes">
         <button @click="cancelarImportacao">Cancelar</button>
         <button @click="confirmarNovoId">Tentar Novamente</button>
@@ -363,6 +406,7 @@ button {
   border: 1px solid black;
   border-top: none;
 }
+
 .dropdown-menu button:first-child {
   border-top: 1px solid black;
 }
