@@ -3,8 +3,8 @@
     <header class="topo">
       <h1>Área do Monitor</h1>
 
-      <button @click="sair">
-        Sair
+      <button @click="voltar">
+        Voltar
       </button>
     </header>
 
@@ -17,7 +17,7 @@
         <thead>
           <tr>
             <th>Nome</th>
-            <th>CPF</th>
+            <th>Cadastrado Por</th>
           </tr>
         </thead>
 
@@ -33,46 +33,7 @@
             :key="paciente.cpf"
           >
             <td>{{ paciente.nome }}</td>
-            <td>{{ paciente.cpf }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- QUESTIONÁRIOS -->
-
-    <section class="card">
-      <h2>Questionários Disponíveis</h2>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Descrição</th>
-            <th>Identificador</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr v-if="questionarios.length === 0">
-            <td colspan="3">
-              Nenhum questionário disponível.
-            </td>
-          </tr>
-
-          <tr
-            v-for="questionario in questionarios"
-            :key="questionario.identificador"
-          >
-            <td>{{ questionario.nome }}</td>
-
-            <td>
-              {{ questionario.descricao }}
-            </td>
-
-            <td>
-              {{ questionario.identificador }}
-            </td>
+            <td>{{ paciente.nomeCadastrador }}</td>
           </tr>
         </tbody>
       </table>
@@ -87,63 +48,49 @@ export default {
   data() {
     return {
       usuarioLogado: null,
-
-      pacientes: [],
-
-      questionarios: []
+      pacientes: []
     }
   },
 
-  created() {
+  async created() {
     const usuario = JSON.parse(
       localStorage.getItem("usuarioLogado")
-    )
+    );
 
     if (!usuario || usuario.perfil !== "monitor") {
-      this.$router.push("/login")
-      return
+      this.$router.push("/");
+      return;
     }
 
-    this.usuarioLogado = usuario
+    this.usuarioLogado = usuario;
 
-    // =========================
-    // PACIENTES
-    // =========================
-
-    const pacientesSalvos = JSON.parse(
-      localStorage.getItem("pacientes")
-    ) || []
-
-    this.pacientes = pacientesSalvos.filter(
-      paciente =>
-        this.limparCPF(paciente.monitorCpf) ===
-        this.limparCPF(usuario.cpf)
-    )
-
-    // =========================
-    // QUESTIONÁRIOS
-    // =========================
-
-    const questionariosSalvos = JSON.parse(
-      localStorage.getItem("questionarios")
-    ) || []
-
-    this.questionarios = questionariosSalvos.filter(
-      questionario =>
-        this.limparCPF(questionario.criadoPor) ===
-        this.limparCPF(usuario.cadastradoPor)
-    )
+    await this.carregarPacientes();
+    
   },
 
   methods: {
-    limparCPF(cpf) {
-      return cpf.replace(/\D/g, "")
-    },
+  limparCPF(cpf) {
+    return String(cpf || "").replace(/\D/g, "");
+  },
 
-    sair() {
-      localStorage.removeItem("usuarioLogado")
+  async carregarPacientes() {
+    const resposta = await fetch(
+      'http://localhost:3000/api/pacientes'
+    );
 
-      this.$router.push("/login")
+    const pacientes = await resposta.json();
+
+    console.log("Pacientes recebidos:", pacientes);
+
+    this.pacientes = pacientes.filter(
+      paciente =>
+        this.limparCPF(paciente.monitorCpf || "") ===
+        this.limparCPF(this.usuarioLogado.cpf)
+    );
+  },
+
+    voltar() {
+      this.$router.push("/home")
     }
   }
 }
@@ -151,12 +98,11 @@ export default {
 
 <style scoped>
 .container {
-  max-width: 1100px;
-  margin: 40px auto;
+  max-width: 900px;
+  margin: 80px auto;
   padding: 24px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #1f2937;
-  min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 30px;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.18);

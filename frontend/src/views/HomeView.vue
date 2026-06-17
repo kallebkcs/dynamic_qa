@@ -7,6 +7,8 @@ import ConfirmModal from '@/components/ConfirmModal.vue'
 const router = useRouter()
 const questionarios = ref([])
 
+const perfilUsuario = ref('');
+
 // Fixed Components
 const toastRef = ref(null);
 const confirmRef = ref(null);
@@ -73,16 +75,36 @@ const fecharMenuAoClicarFora = (event) => {
 };
 
 onMounted(() => {
-  // Para Modal
-  document.addEventListener('click', fecharMenuAoClicarFora);
+  // Recupera usuário logado
+  const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
 
-  // Para Toast vindo de questionários criados/editados
-  if (history.state && history.state.toastMsg) {
-    toastRef.value.mostrar(history.state.toastMsg, history.state.toastTipo || 'sucesso');
-    history.replaceState({ ...history.state, toastMsg: undefined, toastTipo: undefined }, document.title);
+  if (usuario) {
+    perfilUsuario.value = usuario.perfil;
+  } else {
+    router.push('/');
+    return;
   }
 
-  // Carregamento padrão
+  // Fecha menu ao clicar fora
+  document.addEventListener('click', fecharMenuAoClicarFora);
+
+  // Toast de retorno
+  if (history.state && history.state.toastMsg) {
+    toastRef.value.mostrar(
+      history.state.toastMsg,
+      history.state.toastTipo || 'sucesso'
+    );
+
+    history.replaceState(
+      {
+        ...history.state,
+        toastMsg: undefined,
+        toastTipo: undefined
+      },
+      document.title
+    );
+  }
+
   carregarQuestionarios();
 });
 
@@ -93,19 +115,37 @@ onUnmounted(() => {
 // Busca os dados do backend
 const carregarQuestionarios = async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/questionarios')
-    if (response.ok) {
-      const dados = await response.json();
-      questionarios.value = dados.map(q => {
-        const vinculo = q.vinculos?.find(v => v.idCoordenador === idCoordenador.value);
-        return {
-          ...q,
-          idPlanilhaCoordenador: vinculo ? vinculo.idPlanilha : null
-        };
-      });
+
+    const usuario = JSON.parse(
+      localStorage.getItem('usuarioLogado')
+    );
+
+    let url = 'http://localhost:3000/api/questionarios';
+
+    if (usuario.perfil === 'monitor') {
+      url = `http://localhost:3000/api/questionarios/monitor/${usuario.cpf}`;
     }
+
+    const response = await fetch(url);
+
+    if (response.ok) {
+
+      const dados = await response.json();
+
+      questionarios.value = dados.map(q => ({
+        ...q,
+        idPlanilhaCoordenador: null
+      }));
+
+    }
+
   } catch (error) {
-    console.error("Erro ao carregar questionários:", error)
+
+    console.error(
+      "Erro ao carregar questionários:",
+      error
+    );
+
   }
 }
 
@@ -277,7 +317,17 @@ const excluirQuestionario = async (id) => {
   <ConfirmModal ref="confirmRef" />
 
   <main class="home-view">
-    <h2>Questionários</h2>
+    <header class="topo">
+      <h1>Questionários</h1>
+      <div class="acoes">
+        <template v-if="perfilUsuario !== 'monitor'">
+           <button class="btn-cadastrar" @click="router.push('/coordenador')">Cadastrar Monitor/Paciente</button>
+        </template>
+        <template v-if="perfilUsuario !== 'coordenador'">
+           <button class="btn-cadastrar" @click="router.push('/monitor')">Meus Pacientes</button>
+        </template>
+      </div> 
+    </header>
 
     <div v-if="questionarios.length === 0">Nenhum questionário disponível.</div>
 
@@ -290,7 +340,7 @@ const excluirQuestionario = async (id) => {
         
         <div class="acoes">
           <button @click="navegarParaQuestionario(q.idInterno)">INICIAR</button>
-          <div class="dropdown-container">
+          <div v-if="perfilUsuario !== 'monitor'" class="dropdown-container">
             <button @click="toggleMenu(q.idInterno)" class="btn-pontinhos">&#8942;</button>
             <div v-show="menuAbertoId === q.idInterno" class="dropdown-menu">
               <button @click="router.push(`/edicao-questionario/${q.idInterno}`); menuAbertoId = null">EDITAR</button>
@@ -307,7 +357,7 @@ const excluirQuestionario = async (id) => {
         </div>
       </div>
     </div>
-
+    <template v-if="perfilUsuario !== 'monitor'">
     <button @click="router.push('/criacao-questionario')">CRIAR QUESTIONÁRIO</button>
     <input 
       type="file" 
@@ -317,6 +367,7 @@ const excluirQuestionario = async (id) => {
       @change="processarImportacao" 
     />
     <button @click="abrirSeletorArquivo">IMPORTAR QUESTIONÁRIO</button>
+    </template>
   </main>
 
   <div v-if="modalAberto" class="modal-overlay">
@@ -359,16 +410,48 @@ const excluirQuestionario = async (id) => {
 
 <style scoped>
 .home-view {
-  padding: 20px;
+  max-width: 1120px;
+  margin: 40px auto;
+  padding: 28px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1f2937;
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 32px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+}
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.topo h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.acoes {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .item-questionario {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #000;
-  padding: 15px;
-  margin-bottom: 10px;
+  background: rgba(148, 163, 184, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 24px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 }
 
 .info p {
@@ -378,11 +461,28 @@ const excluirQuestionario = async (id) => {
 }
 
 button {
-  padding: 10px 15px;
+  padding: 12px 18px;
   cursor: pointer;
-  border: 1px solid #000;
-  background: #fff;
-  font-weight: bold;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 700;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.18);
+}
+
+button.secondary {
+  background: #4b5563;
+}
+
+button.danger {
+  background: #ef4444;
 }
 
 .dropdown-menu button, 
@@ -398,7 +498,7 @@ button {
   
   text-decoration: none;
   color: black;
-  background: white;
+  background: rgba(148, 163, 184, 0.28);
   padding: 10px;
   text-align: center;
   cursor: pointer;
@@ -412,7 +512,21 @@ button {
 }
 
 button:hover, .button-link:hover {
-  background: #eee;
+  background: #eeeeee00;
+}
+
+.lista {
+  display: grid;
+  gap: 16px;
+}
+
+.vazio {
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #475569;
+  margin-bottom: 18px;
 }
 
 .modal-overlay {
@@ -451,7 +565,7 @@ button:hover, .button-link:hover {
   position: absolute;
   top: 100%;
   right: 0;
-  background-color: white;
+  background-color: rgba(148, 163, 184, 0.082);
   min-width: 180px;
   box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
   z-index: 10;
@@ -460,4 +574,5 @@ button:hover, .button-link:hover {
   border-radius: 4px;
   overflow: hidden;
 }
+
 </style>

@@ -4,12 +4,8 @@
       <h1>Área do Coordenador</h1>
 
       <div class="acoes">
-        <button @click="irParaCriarQuestionario">
-          Criar Questionário
-        </button>
-
-        <button @click="sair">
-          Sair
+        <button @click="voltar">
+          Voltar
         </button>
       </div>
     </header>
@@ -50,6 +46,25 @@
         />
       </div>
 
+      <div class="campo">
+        <label>Questionários:</label>
+
+        <div>
+          <div
+            v-for="q in questionarios"
+            :key="q.idInterno"
+          >
+            <input
+              type="checkbox"
+              :value="q.idInterno"
+              v-model="monitor.questionarios"
+            />
+
+            {{ q.titulo }}
+          </div>
+        </div>
+      </div>
+
       <button @click="cadastrarMonitor">
         Cadastrar Monitor
       </button>
@@ -66,13 +81,14 @@
             <th>Nome</th>
             <th>CPF</th>
             <th>Email</th>
+            <th>Questionários</th>
             <th>Ações</th>
           </tr>
         </thead>
 
         <tbody>
           <tr v-if="monitores.length === 0">
-            <td colspan="4">
+            <td colspan="5">
               Nenhum monitor cadastrado.
             </td>
           </tr>
@@ -84,6 +100,8 @@
             <td>{{ monitor.nome }}</td>
             <td>{{ monitor.cpf }}</td>
             <td>{{ monitor.email }}</td>
+
+            <td>{{monitor.questionarios || 'Nenhum questionário vinculado'}}</td>
 
             <td>
               <button
@@ -232,7 +250,8 @@ export default {
         nome: "",
         cpf: "",
         email: "",
-        perfil: "monitor"
+        perfil: "monitor",
+        questionarios: []
       },
 
       paciente: {
@@ -244,35 +263,24 @@ export default {
       },
 
       monitores: [],
+      questionarios: [],
       pacientes: []
     }
   },
 
-  created() {
+  async created() {
     const usuario = JSON.parse(
       localStorage.getItem("usuarioLogado")
     )
-
-    if (!usuario || usuario.perfil !== "coordenador") {
-      this.$router.push("/login")
-      return
-    }
-
+    
     this.usuarioLogado = usuario
 
-    const monitoresSalvos =
-      localStorage.getItem("monitores")
+    await this.carregarMonitores()
 
-    this.monitores = monitoresSalvos
-      ? JSON.parse(monitoresSalvos)
-      : []
+    await this.carregarPacientes()
 
-    const pacientesSalvos =
-      localStorage.getItem("pacientes")
-
-    this.pacientes = pacientesSalvos
-      ? JSON.parse(pacientesSalvos)
-      : []
+    await this.carregarQuestionarios()
+    
   },
 
   methods: {
@@ -310,7 +318,15 @@ export default {
       return regex.test(email)
     },
 
-    cadastrarMonitor() {
+    async carregarQuestionarios() {
+      const resposta = await fetch(
+        "http://localhost:3000/api/questionarios"
+      )
+
+      this.questionarios = await resposta.json()
+    },
+
+    async cadastrarMonitor() {
       if (
         !this.monitor.nome ||
         !this.monitor.cpf ||
@@ -347,32 +363,51 @@ export default {
         return
       }
 
-      const novoMonitor = {
-        nome: this.monitor.nome,
-        cpf: this.monitor.cpf,
-        email: this.monitor.email,
-        perfil: "monitor",
-        cadastradoPor: this.usuarioLogado.cpf
+      const resposta = await fetch(
+        'http://localhost:3000/api/usuarios',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            cpf: this.limparCPF(this.monitor.cpf),
+            nome: this.monitor.nome.trim(),
+            email: this.monitor.email.trim(),
+            perfil: 'monitor',
+            questionarios: this.monitor.questionarios
+          })
+        }
+      );
+
+      const dados = await resposta.json();
+      if (!resposta.ok) {
+        alert(dados.erro || "Erro ao cadastrar coordenador.");
+        return;
       }
-
-      this.monitores.push(novoMonitor)
-
-      localStorage.setItem(
-        "monitores",
-        JSON.stringify(this.monitores)
-      )
 
       this.monitor = {
         nome: "",
         cpf: "",
         email: "",
-        perfil: "monitor"
+        perfil: "monitor",
+        questionarios: []
       }
+
+      await this.carregarMonitores();
 
       alert("Monitor cadastrado com sucesso!")
     },
+    
+    async carregarMonitores() {
+      const resposta = await fetch(
+        'http://localhost:3000/api/usuarios/monitor'
+      );
 
-    removerMonitor(cpf) {
+      this.monitores = await resposta.json();
+    },
+
+    async removerMonitor(cpf) {
       const confirmar = confirm(
         "Deseja remover este monitor?"
       )
@@ -381,58 +416,59 @@ export default {
         return
       }
 
-      this.monitores = this.monitores.filter(
-        monitor =>
-          this.limparCPF(monitor.cpf) !==
-          this.limparCPF(cpf)
-      )
+      const resposta = await fetch(
+        `http://localhost:3000/api/usuarios/${this.limparCPF(cpf)}`,
+        {
+          method: 'DELETE'
+        }
+      );
 
-      localStorage.setItem(
-        "monitores",
-        JSON.stringify(this.monitores)
-      )
+      if (!resposta.ok) {
+        alert("Erro ao remover monitor.")
+        return
+      }
+
+      await this.carregarMonitores();
 
       alert("Monitor removido com sucesso!")
     },
 
-    cadastrarPaciente() {
+    async cadastrarPaciente() {
       if (
         !this.paciente.nome ||
         !this.paciente.cpf ||
         !this.paciente.cep ||
-        !this.paciente.estado ||
-        !this.paciente.monitorCpf
+        !this.paciente.estado //||
+        //!this.paciente.monitorCpf
       ) {
         alert("Preencha todos os campos.")
         return
       }
 
-      const cpfJaExiste = this.pacientes.some(
-        paciente =>
-          this.limparCPF(paciente.cpf) ===
-          this.limparCPF(this.paciente.cpf)
-      )
+      const resposta = await fetch(
+        'http://localhost:3000/api/pacientes',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            cpf: this.limparCPF(this.paciente.cpf),
+            nome: this.paciente.nome.trim(),
+            cep: this.paciente.cep,
+            estado: this.paciente.estado,
+            monitorCpf: this.paciente.monitorCpf || null,
+            cadastradoPor: this.usuarioLogado?.cpf || ""
+          })
+        }
+      );
 
-      if (cpfJaExiste) {
-        alert("Paciente já cadastrado.")
-        return
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        alert(dados.erro || "Erro ao cadastrar paciente.");
+        return;
       }
-
-      const novoPaciente = {
-        nome: this.paciente.nome,
-        cpf: this.paciente.cpf,
-        cep: this.paciente.cep,
-        estado: this.paciente.estado,
-        monitorCpf: this.paciente.monitorCpf,
-        cadastradoPor: this.usuarioLogado.cpf
-      }
-
-      this.pacientes.push(novoPaciente)
-
-      localStorage.setItem(
-        "pacientes",
-        JSON.stringify(this.pacientes)
-      )
 
       this.paciente = {
         nome: "",
@@ -440,32 +476,39 @@ export default {
         cep: "",
         estado: "",
         monitorCpf: ""
-      }
+      };
 
-      alert("Paciente cadastrado com sucesso!")
+      await this.carregarPacientes();
+      
+      alert("Paciente cadastrado com sucesso!");
+
     },
 
-    removerPaciente(cpf) {
+    async carregarPacientes() {
+      const resposta = await fetch(
+        'http://localhost:3000/api/pacientes'
+      );
+
+      this.pacientes = await resposta.json();
+    },
+
+    async removerPaciente(cpf) {
       const confirmar = confirm(
         "Deseja remover este paciente?"
-      )
+      );
 
-      if (!confirmar) {
-        return
-      }
+      if (!confirmar) return;
 
-      this.pacientes = this.pacientes.filter(
-        paciente =>
-          this.limparCPF(paciente.cpf) !==
-          this.limparCPF(cpf)
-      )
+      await fetch(
+        `http://localhost:3000/api/pacientes/${this.limparCPF(cpf)}`,
+        {
+          method: "DELETE"
+        }
+      );
 
-      localStorage.setItem(
-        "pacientes",
-        JSON.stringify(this.pacientes)
-      )
+      await this.carregarPacientes();
 
-      alert("Paciente removido com sucesso!")
+      alert("Paciente removido com sucesso!");
     },
 
     buscarNomeMonitor(cpf) {
@@ -478,18 +521,8 @@ export default {
         : "Monitor não encontrado"
     },
 
-    irParaCriarQuestionario() {
-      this.$router.push(
-        "/criacao-questionario"
-      )
-    },
-
-    sair() {
-      localStorage.removeItem(
-        "usuarioLogado"
-      )
-
-      this.$router.push("/login")
+    voltar() {
+      this.$router.push("/home")
     }
   }
 }

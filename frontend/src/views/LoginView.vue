@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <div class="login-topo">Dynamic QA</div>
+
     <div class="card-login">
       <h1>Login</h1>
 
@@ -20,17 +21,28 @@
 
         <select v-model="perfil">
           <option value="">Selecione</option>
-          <option value="administrador">Administrador</option>
           <option value="coordenador">Coordenador</option>
           <option value="monitor">Monitor</option>
         </select>
       </div>
 
-      <button @click="fazerLogin">
-        Entrar
-      </button>
+      <div class="botoes">
+        <button @click="fazerLogin">
+          Entrar
+        </button>
+
+        <button
+          class="btn-cadastrar"
+          @click="fazerCadastro"
+        >
+          Cadastrar
+        </button>
+      </div>
     </div>
-    <div class="login-rodape">© 2026 - UFSC Ara</div>
+
+    <div class="login-rodape">
+      © 2026 - UFSC Ara
+    </div>
   </div>
 </template>
 
@@ -101,37 +113,56 @@ export default {
       return true
     },
 
-    fazerLogin() {
+    async fazerLogin() {
       if (!this.cpf || !this.perfil) {
         alert("Preencha todos os campos.")
         return
       }
 
-      const cpfValido = this.validarCPF(this.cpf)
-
-      if (!cpfValido) {
-        alert("CPF inválido.")
-        return
+      if (!this.validarCPF(this.cpf)) {
+        alert("CPF inválido.");
+        return;
       }
 
-      const usuarioLogado = {
-        cpf: this.cpf,
-        perfil: this.perfil
+      try {
+        const resposta = await fetch(
+          "http://localhost:3000/api/login",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              cpf: this.cpf.replace(/\D/g, ""),
+              perfil: this.perfil
+            })
+          }
+        );
+
+      const dados = await resposta.json()
+
+      if (!resposta.ok) {
+        alert(dados.erro)
+        return;
       }
 
       localStorage.setItem(
         "usuarioLogado",
-        JSON.stringify(usuarioLogado)
-      )
+        JSON.stringify(dados)
+      );
 
-      if (this.perfil === "administrador") {
-        this.$router.push("/administrador")
-      } else if (this.perfil === "coordenador") {
-        this.$router.push("/coordenador")
-      } else if (this.perfil === "monitor") {
-        this.$router.push("/monitor")
+      this.$router.push("/home");
+
+      } catch (error) {
+        console.error("Erro ao fazer login:", error);
+        alert("Erro ao fazer login. Tente novamente.");
       }
-    }
+    },
+
+    fazerCadastro() {
+    this.$router.push("/cadastro")
+  }
+
   }
 }
 </script>
@@ -146,6 +177,16 @@ export default {
   padding: 24px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.botoes {
+  display: flex;
+  gap: 15px; 
+  margin-top: 20px;
+}
+
+.botoes button {
+  flex: 1; 
 }
 
 .login-topo {
@@ -241,6 +282,8 @@ button:hover {
   font-weight: 700;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
+
+
 
 @media (max-width: 520px) {
   .card-login {

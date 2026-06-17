@@ -53,9 +53,49 @@ const connectDB = async () => {
     )
   `);
 
-  // Insere sementes caso necessário
-  await seedDatabase(dbInstance);
-  return dbInstance;
+  await dbInstance.exec(`
+    CREATE TABLE IF NOT EXISTS Usuarios (
+      cpf char(11) PRIMARY KEY,
+      nome TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      perfil TEXT NOT NULL
+    )
+  `);
+
+  /*await dbInstance.run(`
+    DELETE FROM Usuarios;
+`);*/
+
+  await dbInstance.exec(`
+    CREATE TABLE IF NOT EXISTS Pacientes (
+      cpf TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      cep TEXT NOT NULL,
+      estado TEXT NOT NULL,
+      monitorCpf TEXT,
+      cadastradoPor TEXT NOT NULL,
+      FOREIGN KEY (monitorCpf) REFERENCES Usuarios(cpf)
+    )
+  `);
+
+  await dbInstance.exec(`
+    CREATE TABLE IF NOT EXISTS MonitorQuestionarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      monitorCpf TEXT NOT NULL,
+      questionarioId TEXT NOT NULL,
+
+      FOREIGN KEY (monitorCpf)
+      REFERENCES Usuarios(cpf),
+
+      FOREIGN KEY (questionarioId)
+      REFERENCES Questionarios(idInterno)
+      )
+    `);
+
+// Insere sementes caso necessário
+await seedDatabase(dbInstance);
+
+return dbInstance;
 };
 
 const getDB = () => {

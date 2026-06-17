@@ -3,9 +3,9 @@ import HomeView from '../views/HomeView.vue'
 import QuestionarioView from '../views/QuestionarioView.vue'
 import CriacaoQuestionarioView from '@/views/CriacaoQuestionarioView.vue'
 import Login from '@/views/LoginView.vue'
+import Cadastro from '@/views/CadastroView.vue'
 import CoordenadorView from "@/views/CoordenadorView.vue"
 import MonitorView from "@/views/MonitorView.vue"
-import AdministradorView from "@/views/AdministradorView.vue"
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,25 +13,20 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-
-    {
-      path: '/administrador',
-      name: 'administrador',
-      component: AdministradorView,
-
-      meta: {
-        requiresAuth: true,
-        perfil: 'administrador'
-      }
-    },
-
-    {
-      path: '/login',
       name: 'login',
-      component: Login
+      component: Login,
+    },
+
+    {
+      path: '/cadastro',
+      name: 'cadastro',
+      component: Cadastro,
+    },
+
+    {
+      path: '/home',
+      name: 'home',
+      component: HomeView
     },
 
     {
@@ -60,9 +55,10 @@ const router = createRouter({
       path: '/questionario/:id',
       name: 'questionario',
       component: QuestionarioView,
-      //meta: {
-      //  requiresAuth: true
-      //}
+      
+      meta: {
+        requiresAuth: true
+      }
     },
 
     {
@@ -70,10 +66,10 @@ const router = createRouter({
       name: 'criacao-questionario',
       component: CriacaoQuestionarioView,
 
-      /*meta: {
+      meta: {
         requiresAuth: true,
         perfil: 'coordenador'
-      }*/
+      }
     },
     
     {

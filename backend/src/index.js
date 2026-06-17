@@ -5,6 +5,7 @@ const PORT = 3000;
 const app = express();
 const path = require('path');
 const QuestionarioRoutes = require('./routes/QuestionarioRoutes');
+const AuthRoutes = require('./routes/AuthRoutes');
 const {connectDB} = require('./config/db');
 
 app.use(cors());
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 app.use('/api/questionarios', QuestionarioRoutes);
+app.use('/api', AuthRoutes);
 connectDB().catch(err => console.error("Erro ao iniciar SQLite:", err));
 
 app.use((req, res) => {
