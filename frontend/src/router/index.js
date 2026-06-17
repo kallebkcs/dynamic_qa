@@ -6,6 +6,11 @@ import Login from '@/views/LoginView.vue'
 import Cadastro from '@/views/CadastroView.vue'
 import CoordenadorView from "@/views/CoordenadorView.vue"
 import MonitorView from "@/views/MonitorView.vue"
+<<<<<<< HEAD
+=======
+import AdministradorView from "@/views/AdministradorView.vue"
+import VisualizarRespostasView from '@/views/VisualizarRespostasView.vue'
+>>>>>>> 20907e8 (Lógica de planilha dos questionários alterada para corresponder às novas especificações)
 
 const router = createRouter({
   history: createWebHistory(),
@@ -76,6 +81,12 @@ const router = createRouter({
       path: '/edicao-questionario/:id',
       name: 'edicao-questionario',
       component: CriacaoQuestionarioView
+    },
+
+    {
+      path: '/respostas/:id',
+      name: 'visualizar-respostas',
+      component: VisualizarRespostasView
     }
   ]
 })

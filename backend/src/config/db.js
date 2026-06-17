@@ -52,6 +52,15 @@ const connectDB = async () => {
       documento TEXT
     )
   `);
+  // Vamos armazenar as respostas dos pacientes no banco de dados agora (como é local, dificilmente será empecilho)
+  await dbInstance.exec(`
+  CREATE TABLE IF NOT EXISTS Respostas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    idQuestionario TEXT NOT NULL,
+    dataSubmissao TEXT NOT NULL,
+    conteudo TEXT NOT NULL
+  )
+`);
 
   await dbInstance.exec(`
     CREATE TABLE IF NOT EXISTS Usuarios (

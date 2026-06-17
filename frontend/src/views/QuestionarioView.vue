@@ -23,7 +23,6 @@ const pesoAcumulado = ref(0);
 
 // Submissão
 const enviando = ref(false);
-const naoSalvou = ref(false);
 
 // Modal de Resultado
 const mostrarResultado = ref(false)
@@ -39,9 +38,7 @@ const perguntaAtual = computed(() =>
   blocoAtual.value?.perguntas.find(p => p.uid === uidPerguntaAtiva.value)
 );
 
-// Relação com a planilha
-const idPlanilhaAtiva = ref(null);
-// Lembre-se de puxar o ID do coordenador do mesmo lugar que você vai usar na Home
+// TODO: Lembre-se de puxar o ID do coordenador do mesmo lugar que você vai usar na Home
 const idCoordenador = ref('id_do_coordenador_atual');
 
 
@@ -54,14 +51,6 @@ const carregarDados = async () => {
     const dados = await response.json();
     
     questionario.value = dados;
-
-    // Encontra a planilha 
-    const vinculo = dados.vinculos?.find(v => v.idCoordenador === idCoordenador.value);
-    idPlanilhaAtiva.value = vinculo ? vinculo.idPlanilha : null;
-    if (!idPlanilhaAtiva.value) {
-      toastRef.value.mostrar("AVISO: Este coordenador ainda não vinculou uma planilha para este questionário! As respostas não serão salvas")
-      naoSalvou.value = true;
-    }
 
     // Define o bloco inicial conforme definido no questionário 
     uidBlocoAtivo.value = dados.primeiro;
@@ -348,7 +337,6 @@ const enviarRespostas = async (diagnostico) => {
 
   const payload = {
     idQuestionario: questionario.value.idInterno,
-    idPlanilha: idPlanilhaAtiva.value,
     diagnostico: diagnostico, 
     respostas: respostasUsuario
   };
@@ -466,7 +454,7 @@ onMounted(carregarDados)
       <h2 class="texto-resultado">
         {{ textoResultado }}
       </h2>
-      <p v-if="!naoSalvou">Respostas salvas na planilha.</p>
+      <p>Respostas salvas na planilha.</p>
       <!-- <p class="texto-resultado">{{ textoResultado }}</p> -->
       <button @click="mostrarResultado = false; router.push('/');" class="btn-fechar">OK</button>
     </div>

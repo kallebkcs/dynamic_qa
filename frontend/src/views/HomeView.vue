@@ -16,52 +16,6 @@ const confirmRef = ref(null);
 // Considerando que tenho o idCoordenador
 const idCoordenador = ref('id_do_coordenador_atual');
 
-// Modal de vínculo de questionário
-const modalAberto = ref(false);
-const idPlanilhaInput = ref('');
-const questionarioAlvo = ref(null);
-
-const abrirModal = (questionario) => {
-  questionarioAlvo.value = questionario;
-  idPlanilhaInput.value = questionario.idPlanilhaCoordenador || ''; // Já preenche se for alteração
-  modalAberto.value = true;
-};
-
-const fecharModal = () => {
-  modalAberto.value = false;
-  idPlanilhaInput.value = '';
-  questionarioAlvo.value = null;
-};
-
-const salvarVinculo = async () => {
-  if (!idPlanilhaInput.value.trim()) {
-    toastRef.value.mostrar("Coloque um ID válido antes de salvar.", "erro")
-    return;
-  }
-
-  try {
-    const res = await fetch(`http://localhost:3000/api/questionarios/${questionarioAlvo.value.idInterno}/planilha`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idPlanilha: idPlanilhaInput.value.trim(), idCoordenador: idCoordenador.value })
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      // Atualiza visualmente o questionário na lista sem precisar recarregar a página
-      questionarioAlvo.value.idPlanilhaCoordenador = idPlanilhaInput.value.trim();
-      toastRef.value.mostrar("Planilha vinculada e cabeçalhos gerados!", "sucesso");
-      fecharModal();
-    } else {
-      const err = await res.json();
-      toastRef.value.mostrar(`ERRO: ${err.erro}`, "erro");
-    }
-  } catch (err) {
-    console.error(err);
-    toastRef.value.mostrar(`Falha ao comunicar com o servidor.`, "erro");
-  }
-};
-
 // Abrir opções de questionário //
 const menuAbertoId = ref(null);
 const toggleMenu = (id) => {
@@ -345,11 +299,12 @@ const excluirQuestionario = async (id) => {
             <div v-show="menuAbertoId === q.idInterno" class="dropdown-menu">
               <button @click="router.push(`/edicao-questionario/${q.idInterno}`); menuAbertoId = null">EDITAR</button>
               <button @click="router.push({path: '/criacao-questionario', query: {clone: q.idInterno}}); menuAbertoId = null">EDITAR CÓPIA</button>
-              <button v-if="!q.idPlanilhaCoordenador" @click="abrirModal(q); menuAbertoId = null">VINCULAR PLANILHA</button>
+              <!--<button v-if="!q.idPlanilhaCoordenador" @click="abrirModal(q); menuAbertoId = null">VINCULAR PLANILHA</button>
               <div v-else>
                 <a :href="`https://docs.google.com/spreadsheets/d/${q.idPlanilhaCoordenador}/edit`" target="_blank" class="button-link">ABRIR PLANILHA</a>
                 <button @click="abrirModal(q); menuAbertoId = null">ALTERAR PLANILHA</button>
-              </div>
+              </div>-->
+              <button @click="router.push(`/respostas/${q.idInterno}`)">RESPOSTAS</button>
               <button @click="exportarQuestionario(q.idInterno, q.titulo); menuAbertoId = null">EXPORTAR</button>
               <button class="danger" @click="excluirQuestionario(q.idInterno); menuAbertoId = null">EXCLUIR</button>
             </div>
