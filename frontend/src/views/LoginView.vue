@@ -1,4 +1,6 @@
 <template>
+  <AvisoToast ref="toastRef" />
+
   <div class="container">
     <div class="login-topo">Dynamic QA</div>
 
@@ -47,8 +49,14 @@
 </template>
 
 <script>
+import AvisoToast from '@/components/AvisoToast.vue';
+
 export default {
   name: "LoginView",
+
+  components: {
+    AvisoToast
+  },
 
   data() {
     return {
@@ -115,12 +123,18 @@ export default {
 
     async fazerLogin() {
       if (!this.cpf || !this.perfil) {
-        alert("Preencha todos os campos.")
+        this.$refs.toastRef.mostrar(
+          "Preencha todos os campos.",
+          "erro"
+        )
         return
       }
 
       if (!this.validarCPF(this.cpf)) {
-        alert("CPF inválido.");
+        this.$refs.toastRef.mostrar(
+          "CPF inválido.",
+          "erro"
+        )
         return;
       }
 
@@ -142,7 +156,10 @@ export default {
       const dados = await resposta.json()
 
       if (!resposta.ok) {
-        alert(dados.erro)
+        this.$refs.toastRef.mostrar(
+          dados.erro,
+          "erro"
+        )
         return;
       }
 
@@ -155,7 +172,10 @@ export default {
 
       } catch (error) {
         console.error("Erro ao fazer login:", error);
-        alert("Erro ao fazer login. Tente novamente.");
+        this.$refs.toastRef.mostrar(
+          "Erro ao fazer login. Tente novamente.",
+          "erro"
+        )
       }
     },
 

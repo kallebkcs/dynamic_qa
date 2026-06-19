@@ -1,4 +1,7 @@
 <template>
+
+  <AvisoToast ref="toastRef" />
+
   <div class="container">
     <header class="topo">
       <h1>Cadastro de Coordenador</h1>
@@ -39,8 +42,15 @@
 </template>
 
 <script>
+
+import AvisoToast from '@/components/AvisoToast.vue'
+
 export default {
   name: "CadastroCoordenador",
+
+  components: {
+    AvisoToast
+  },
 
   data() {
     return {
@@ -78,12 +88,18 @@ export default {
         !this.coordenador.cpf ||
         !this.coordenador.email
       ) {
-        alert("Preencha todos os campos.")
+        this.$refs.toastRef.mostrar(
+          "Preencha todos os campos.",
+          "erro"
+        )
         return
       }
 
       if (!this.validarEmail(this.coordenador.email)) {
-        alert("Email inválido.")
+        this.$refs.toastRef.mostrar(
+          "Email inválido.",
+          "erro"
+        )
         return
       }
 
@@ -106,11 +122,17 @@ export default {
       const dados = await resposta.json()
 
       if (!resposta.ok) {
-        alert(dados.erro)
+        this.$refs.toastRef.mostrar(
+          dados.erro,
+          "erro"
+        )
         return
       }
 
-      alert("Cadastro realizado com sucesso!")
+      this.$refs.toastRef.mostrar(
+        "Cadastro realizado com sucesso!",
+        "sucesso"
+      )
 
       this.$router.push("/")
     },

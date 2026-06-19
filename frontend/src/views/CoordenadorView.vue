@@ -1,5 +1,9 @@
 <template>
   <div class="container">
+
+    <AvisoToast ref="toastRef" />
+    <ConfirmModal ref="confirmRef" />
+
     <header class="topo">
       <h1>Área do Coordenador</h1>
 
@@ -49,8 +53,9 @@
       <div class="campo">
         <label>Questionários:</label>
 
-        <div>
+        <div class="questionarios-box">
           <div
+            class="questionario-item"
             v-for="q in questionarios"
             :key="q.idInterno"
           >
@@ -60,7 +65,7 @@
               v-model="monitor.questionarios"
             />
 
-            {{ q.titulo }}
+            <span>{{ q.titulo }}</span>
           </div>
         </div>
       </div>
@@ -239,8 +244,21 @@
 </template>
 
 <script>
+import AvisoToast from '@/components/AvisoToast.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+
 export default {
   name: "CoordenadorView",
+
+  components: {
+    AvisoToast,
+    ConfirmModal
+  },
+
+  mounted() {
+    this.toastRef = this.$refs.toastRef;
+    this.confirmRef = this.$refs.confirmRef;
+  },
 
   data() {
     return {
@@ -332,7 +350,10 @@ export default {
         !this.monitor.cpf ||
         !this.monitor.email
       ) {
-        alert("Preencha todos os campos.")
+        this.toastRef.mostrar(
+          "Preencha todos os campos.",
+          "erro"
+        )
         return
       }
 
@@ -343,7 +364,10 @@ export default {
       )
 
       if (cpfJaExiste) {
-        alert("CPF já cadastrado.")
+        this.toastRef.mostrar(
+          "CPF já cadastrado.",
+          "erro"
+        )
         return
       }
 
@@ -354,12 +378,18 @@ export default {
       )
 
       if (emailJaExiste) {
-        alert("Email já cadastrado.")
+        this.toastRef.mostrar(
+          "Email já cadastrado.",
+          "erro"
+        )
         return
       }
 
       if (!this.validarEmail(this.monitor.email)) {
-        alert("Email inválido.")
+        this.toastRef.mostrar(
+          "Email inválido.",
+          "erro"
+        )
         return
       }
 
@@ -382,7 +412,10 @@ export default {
 
       const dados = await resposta.json();
       if (!resposta.ok) {
-        alert(dados.erro || "Erro ao cadastrar coordenador.");
+        this.toastRef.mostrar(
+          dados.erro || "Erro ao cadastrar coordenador.",
+          "erro"
+        )
         return;
       }
 
@@ -395,8 +428,10 @@ export default {
       }
 
       await this.carregarMonitores();
-
-      alert("Monitor cadastrado com sucesso!")
+        this.toastRef.mostrar(
+          "Monitor cadastrado com sucesso!",
+          "sucesso"
+        )
     },
     
     async carregarMonitores() {
@@ -408,12 +443,13 @@ export default {
     },
 
     async removerMonitor(cpf) {
-      const confirmar = confirm(
-        "Deseja remover este monitor?"
-      )
+      const confirmar =
+        await this.confirmRef.mostrar(
+          "Deseja remover este monitor?"
+        );
 
       if (!confirmar) {
-        return
+        return;
       }
 
       const resposta = await fetch(
@@ -424,13 +460,19 @@ export default {
       );
 
       if (!resposta.ok) {
-        alert("Erro ao remover monitor.")
+        this.toastRef.mostrar(
+          "Erro ao remover monitor.",
+          "erro"
+        )
         return
       }
 
       await this.carregarMonitores();
 
-      alert("Monitor removido com sucesso!")
+      this.toastRef.mostrar(
+        "Monitor removido com sucesso!",
+        "sucesso"
+      )
     },
 
     async cadastrarPaciente() {
@@ -441,7 +483,10 @@ export default {
         !this.paciente.estado //||
         //!this.paciente.monitorCpf
       ) {
-        alert("Preencha todos os campos.")
+        this.toastRef.mostrar(
+          "Preencha todos os campos.",
+          "erro"
+        )
         return
       }
 
@@ -466,7 +511,10 @@ export default {
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        alert(dados.erro || "Erro ao cadastrar paciente.");
+        this.toastRef.mostrar(
+          dados.erro || "Erro ao cadastrar paciente.",
+          "erro"
+        )
         return;
       }
 
@@ -480,7 +528,10 @@ export default {
 
       await this.carregarPacientes();
       
-      alert("Paciente cadastrado com sucesso!");
+      this.toastRef.mostrar(
+        "Paciente cadastrado com sucesso!",
+        "sucesso"
+      )
 
     },
 
@@ -493,11 +544,14 @@ export default {
     },
 
     async removerPaciente(cpf) {
-      const confirmar = confirm(
-        "Deseja remover este paciente?"
-      );
+      const confirmar =
+        await this.confirmRef.mostrar(
+          "Deseja remover este paciente?"
+        );
 
-      if (!confirmar) return;
+      if (!confirmar) {
+        return;
+      }
 
       await fetch(
         `http://localhost:3000/api/pacientes/${this.limparCPF(cpf)}`,
@@ -508,7 +562,10 @@ export default {
 
       await this.carregarPacientes();
 
-      alert("Paciente removido com sucesso!");
+      this.toastRef.mostrar(
+        "Paciente removido com sucesso!",
+        "sucesso"
+      )
     },
 
     buscarNomeMonitor(cpf) {
@@ -529,6 +586,64 @@ export default {
 </script>
 
 <style scoped>
+
+.questionarios-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  max-height: 180px;
+  overflow-y: auto;
+
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+/* cada item estilo "cardzinho" */
+.questionario-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: white;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* hover bonito */
+.questionario-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+  border-color: #667eea;
+}
+
+/* checkbox mais alinhado */
+.questionario-item input {
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+}
+
+/* texto */
+.questionario-item span {
+  font-size: 0.95rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+/* quando selecionado (checkbox marcado) */
+.questionario-item:has(input:checked) {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+}
+
 .container {
   max-width: 1120px;
   margin: 40px auto;
