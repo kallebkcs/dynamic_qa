@@ -4,7 +4,7 @@
     <div class="topo">
       <h1>Respostas do Questionário</h1>
       <div>
-        <button @click="router.push('/')">Voltar</button>
+        <button @click="router.push('/home')">Voltar</button>
         <div class="dropdown-container" v-if="respostas.length > 0">
             <button @click="dropdownAberto = !dropdownAberto" class="btn-exportar">Exportar ▾</button>
             <div class="dropdown-menu" v-show="dropdownAberto">
@@ -31,7 +31,7 @@
               <td>{{ linha.dataSubmissao }}</td>
               <td>{{ linha.conteudo.diagnostico || 'N/A' }}</td>
               <td v-for="coluna in colunasDinamicas" :key="coluna">
-                {{ linha.conteudo.respostas[coluna] || '-' }}
+                {{ linha.conteudo.respostas[coluna] ?? '-' }}
               </td>
             </tr>
           </tbody>
@@ -115,7 +115,7 @@ const exportarCSV = async () => {
   respostas.value.forEach(linha => {
     let row = [`"${linha.dataSubmissao}"`]
     colunasDinamicas.value.forEach(coluna => {
-      const valor = String(linha.conteudo.respostas[coluna] || '').replace(/"/g, '""');
+      const valor = String(linha.conteudo.respostas[coluna] ?? '').replace(/"/g, '""');
       row.push(`"${valor}"`);
     });
     row.push(`"${linha.conteudo.diagnostico || 'N/A'}"`)
@@ -154,7 +154,7 @@ const exportarExcel = async () => {
     ];
     
     colunasDinamicas.value.forEach(coluna => {
-      dadosDaLinha.push(linha.conteudo.respostas[coluna] || '-');
+      dadosDaLinha.push(linha.conteudo.respostas[coluna] ?? '-');
     });
 
     worksheet.addRow(dadosDaLinha);
@@ -171,7 +171,11 @@ const exportarExcel = async () => {
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url); // Limpa a memória
 
-  toastRef.value.mostrar('AVISO: Após exportar o questionário, o envie para um lugar seguro fora do seu sistema e apague permanentemente o arquivo, para que os monitores ou outros usuários não tenham acesso à planilha.', "aviso", 'ETERNO');
+  toastRef.value.mostrar(
+    'AVISO: Após exportar o questionário, o envie para um lugar seguro fora do seu sistema e apague permanentemente o arquivo, para que os monitores ou outros usuários não tenham acesso à planilha.', 
+    "aviso", 
+    'ETERNO'
+  );
 };
 
 onMounted(() => {

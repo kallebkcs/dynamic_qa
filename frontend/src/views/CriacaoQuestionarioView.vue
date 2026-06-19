@@ -1,14 +1,11 @@
 <template>
   <!-- Fixed component -->
   <AvisoToast ref="toastRef" />
+  <ConfirmModal ref="confirmRef"/>
   <div class="container">
     <header class="topo">
-      <!-- <div>
-        <h1>Criação de Questionário</h1>
-        <div class="usuario">Olá, Usuario</div> TODO: Lógica de Cadastro e Login
-      </div>
-      <router-link to="/coordenador" class="sair-btn">Voltar</router-link> -->
       <h1>{{ modoEdicao ? 'Edição de Questionário' : 'Criação de Questionário' }}</h1>
+      <button @click="voltarInicio" class="btn-home">VOLTAR PARA A PÁGINA INICIAL</button>
       <!-- <div class="usuario">Olá, Usuario</div> -->
     </header>
     
@@ -222,18 +219,27 @@ import TipoNumerico from '../components/TipoNumerico.vue';
 import TipoEscolha from '../components/TipoEscolha.vue';
 import TipoEquacao from '../components/TipoEquacao.vue';
 import AvisoToast from '@/components/AvisoToast.vue';
+import ConfirmModal from '@/components/ConfirmModal.vue';
 import { presetQuestions } from '../utils/presetQuestions.js';
 import evaluatex from 'evaluatex';
 
 const router = useRouter();
 const route = useRoute();
 
-// Toast
+// Toast e confirm
 const toastRef = ref(null);
+const confirmRef = ref(null);
 
 // Controle de modo
 const modoEdicao = ref(false);
 const idQuestionarioEdicao = ref(null);
+
+const voltarInicio = async () => {
+  const temCerteza = await confirmRef.value.mostrar(`Tem certeza que deseja voltar para página inicial? Todo progresso será perdido.`);
+  if (!temCerteza) return;
+
+  router.push('/home');
+}
 
 // Modo Edição
 onMounted(async () => {
@@ -274,7 +280,7 @@ const carregarDadosEdicao = async (id, duplicar=false) => {
       }
     } else {
       router.push({
-        path: '/',
+        path: '/home',
         state: {
           toastMsg: "Questionário não encontrado.",
           toastTipo: "erro"
@@ -721,7 +727,7 @@ const salvarQuestionario = async () => {
 
     if (res.ok) { 
       router.push({
-        path: '/',
+        path: '/home',
         state: {
           toastMsg: modoEdicao.value ? "Questionário editado com sucesso!" : "Questionário criado com sucesso!",
           toastTipo: "sucesso"
@@ -960,6 +966,26 @@ button:hover {
 
 .danger {
   background: #dc2626;
+}
+
+.btn-home {
+  position: absolute;
+  right: 20px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-home:hover {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #9ca3af;
 }
 
 .btn-estrela {

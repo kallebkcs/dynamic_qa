@@ -1,5 +1,6 @@
 <template>
   <div class="app">
+    <ConfirmModal ref="confirmRef"/>
     <header>
       <h1>Dynamic QA</h1>
       <button v-if="route.path !== '/'" @click="sair" class="voltar">
@@ -18,12 +19,19 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import ConfirmModal from './components/ConfirmModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 
-const sair = () => {
+const confirmRef = ref(null);
+
+const sair = async () => {
+  const temCerteza = await confirmRef.value.mostrar(`Tem certeza que deseja sair do perfil?`);
+  if (!temCerteza) return;
+
   localStorage.removeItem('usuarioLogado')
   router.push('/')
 }

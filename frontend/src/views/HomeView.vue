@@ -299,11 +299,6 @@ const excluirQuestionario = async (id) => {
             <div v-show="menuAbertoId === q.idInterno" class="dropdown-menu">
               <button @click="router.push(`/edicao-questionario/${q.idInterno}`); menuAbertoId = null">EDITAR</button>
               <button @click="router.push({path: '/criacao-questionario', query: {clone: q.idInterno}}); menuAbertoId = null">EDITAR CÓPIA</button>
-              <!--<button v-if="!q.idPlanilhaCoordenador" @click="abrirModal(q); menuAbertoId = null">VINCULAR PLANILHA</button>
-              <div v-else>
-                <a :href="`https://docs.google.com/spreadsheets/d/${q.idPlanilhaCoordenador}/edit`" target="_blank" class="button-link">ABRIR PLANILHA</a>
-                <button @click="abrirModal(q); menuAbertoId = null">ALTERAR PLANILHA</button>
-              </div>-->
               <button @click="router.push(`/respostas/${q.idInterno}`)">RESPOSTAS</button>
               <button @click="exportarQuestionario(q.idInterno, q.titulo); menuAbertoId = null">EXPORTAR</button>
               <button class="danger" @click="excluirQuestionario(q.idInterno); menuAbertoId = null">EXCLUIR</button>

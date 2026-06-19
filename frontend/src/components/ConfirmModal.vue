@@ -6,7 +6,7 @@
         <p>{{ mensagem }}</p>
         <div class="modal-acoes">
           <button @click="responder(false)">CANCELAR</button>
-          <button @click="responder(true)" class="btn-perigo">EXCLUIR</button>
+          <button @click="responder(true)" class="btn-perigo">CONFIRMAR</button>
         </div>
       </div>
     </div>

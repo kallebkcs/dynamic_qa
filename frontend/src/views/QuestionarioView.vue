@@ -6,8 +6,9 @@ import AvisoToast from '@/components/AvisoToast.vue';
 const route = useRoute();
 const router = useRouter();
 
-// Toast
+// Toast e Confirm
 const toastRef = ref(null);
+const confirmRef = ref(null);
 
 // Dados Brutos
 const questionario = ref(null);
@@ -37,10 +38,6 @@ const blocoAtual = computed(() =>
 const perguntaAtual = computed(() => 
   blocoAtual.value?.perguntas.find(p => p.uid === uidPerguntaAtiva.value)
 );
-
-// TODO: Lembre-se de puxar o ID do coordenador do mesmo lugar que você vai usar na Home
-const idCoordenador = ref('id_do_coordenador_atual');
-
 
 
 // Lógica de carregamento de dados
@@ -241,6 +238,7 @@ const podeAvancar = computed(() => {
 ////////////////// EQUAÇÕES ///////////////////////////
 ///////////////////////////////////////////////////////
 import evaluatex from 'evaluatex';
+import ConfirmModal from '@/components/ConfirmModal.vue';
 
 const calcularEquacao = (pergunta) => {
   const valoresParaCalculo = {};
@@ -362,17 +360,28 @@ const enviarRespostas = async (diagnostico) => {
   }
 }
 
+const voltarInicio = async () => {
+  const temCerteza = await confirmRef.value.mostrar(`Tem certeza que deseja voltar para página inicial? Todo progresso será perdido.`);
+  if (!temCerteza) return;
+
+  router.push('/home');
+}
+
 onMounted(carregarDados)
 </script>
 
 <template>
   <!-- Fixed component -->
   <AvisoToast ref="toastRef" />
+  <ConfirmModal ref="confirmRef"/>
   <div v-if="carregando">Carregando questionário...</div>
   <main v-else-if="questionario" class="visualizer">
   <header v-if="blocoAtual">
-    <h1>{{ questionario.titulo }}</h1>
-    <p><strong>{{ blocoAtual.titulo }}</strong></p>
+    <div class="titulos">
+      <h1>{{ questionario.titulo }}</h1>
+      <p><strong>{{ blocoAtual.titulo }}</strong></p>
+    </div>
+    <button @click="voltarInicio" class="btn-home">VOLTAR PARA PÁGINA INICIAL</button>
   </header>
 
   <section class="container-perguntas">
@@ -456,7 +465,7 @@ onMounted(carregarDados)
       </h2>
       <p>Respostas salvas na planilha.</p>
       <!-- <p class="texto-resultado">{{ textoResultado }}</p> -->
-      <button @click="mostrarResultado = false; router.push('/');" class="btn-fechar">OK</button>
+      <button @click="mostrarResultado = false; router.push('/home');" class="btn-fechar">OK</button>
     </div>
   </div>
 </main>
@@ -474,6 +483,26 @@ onMounted(carregarDados)
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.btn-home {
+  position: absolute;
+  right: 20px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-home:hover {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #9ca3af;
 }
 
 header {
