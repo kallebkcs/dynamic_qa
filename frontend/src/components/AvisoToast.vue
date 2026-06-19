@@ -18,7 +18,7 @@ const mostrar = (msg, tipoAviso = 'aviso', tempo = 5000) => {
   mensagem.value = msg;
   tipo.value = tipoAviso;
   visivel.value = true;  
-  setTimeout(fechar, tempo);
+  if (tempo !== 'ETERNO') setTimeout(fechar, tempo);
 };
 
 const fechar = () => {

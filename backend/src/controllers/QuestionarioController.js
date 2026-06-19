@@ -1,6 +1,30 @@
 const { getDB } = require('../config/db');
+const { machineIdSync } = require('node-machine-id');
 const crypto = require('crypto');
-const sheetsService = require('../services/sheetsService');
+const fs = require('fs');
+
+// Impressão digital do hardware para proteção de dados
+const idFisico = machineIdSync();
+const CHAVE_SISTEMA = crypto.scryptSync(`monitor_pare_de_bisbilhotar_${idFisico}`, 'sal_do_sistema', 32);
+const ALGORITMO = 'aes-256-cbc';
+
+const criptografarDado = (texto) => {
+  const iv = crypto.randomBytes(16); // Vetor aleatório para a mesma resposta gerar cifragens diferentes
+  const cipher = crypto.createCipheriv(ALGORITMO, CHAVE_SISTEMA, iv);
+  let encriptado = cipher.update(texto, 'utf8', 'hex');
+  encriptado += cipher.final('hex');
+  return iv.toString('hex') + ':' + encriptado; // Guarda o IV junto para conseguirmos ler depois
+};
+
+const descriptografarDado = (textoCriptografado) => {
+  const partes = textoCriptografado.split(':');
+  const iv = Buffer.from(partes.shift(), 'hex');
+  const encriptado = partes.join(':');
+  const decipher = crypto.createDecipheriv(ALGORITMO, CHAVE_SISTEMA, iv);
+  let desencriptado = decipher.update(encriptado, 'hex', 'utf8');
+  desencriptado += decipher.final('utf8');
+  return desencriptado;
+};
 
 exports.listarTodos = async (req, res) => {
   try {
@@ -97,50 +121,50 @@ exports.excluirQuestionario = async (req, res) => {
 
 exports.enviarResposta = async (req, res) => {
   try {
-    const { idPlanilha, respostas, diagnostico } = req.body;
+    const { idQuestionario, respostas, diagnostico } = req.body;
+    if (!idQuestionario || !respostas) return res.status(400).json({ erro: 'Dados incompletos. Falta o ID do questionário ou as respostas' });
+    const db = getDB();
 
-    if (!respostas) return res.status(400).json({ erro: 'Dados incompletos.' });
-    if (idPlanilha) {
-      await sheetsService.preencherPlanilha(idPlanilha, { respostas, diagnostico });
-      res.status(200).json({ mensagem: 'Respostas computadas com sucesso!' });
-    } else {
-      res.status(200).json({ mensagem: 'Respostas recebidas, mas não salvas!' });
-    }
+    const dataSubmissao = new Date().toLocaleString('pt-BR');
+    const conteudoString = JSON.stringify({ respostas, diagnostico });
+    const conteudoCriptografado = criptografarDado(conteudoString);
+    await db.run(
+      `INSERT INTO Respostas (idQuestionario, dataSubmissao, conteudo) VALUES (?, ?, ?)`,
+      [idQuestionario, dataSubmissao, conteudoCriptografado]
+    );
+    res.status(200).json({ mensagem: 'Respostas computadas e armazenados no banco de dados.'});
   } catch (error) {
+    console.error("Erro no envio local:", error);
     res.status(500).json({ erro: error.message });
   }
 };
 
-exports.vincularPlanilha = async (req, res) => {
+exports.listarRespostas = async (req, res) => {
   try {
-    const { id } = req.params; // idInterno
-    const { idPlanilha, idCoordenador } = req.body;
+    const { id } = req.params; // id do questionario
     const db = getDB();
-    
-    if (!idPlanilha || !idCoordenador) {
-      return res.status(400).json({ err: 'ID da planilha ou ID do coordenador não encontrado' });
-    }
 
-    const linha = await db.get(`SELECT documento FROM Questionarios WHERE idInterno = ?`, [id]);
-    if (!linha) return res.status(404).json({ erro: 'Questionário não encontrado.' });
-    const questionario = JSON.parse(linha.documento); 
-
-    // Remove o vínculo antigo desse coordenador (se existir) e adiciona o novo
-    if (!questionario.vinculos) questionario.vinculos = [];
-    questionario.vinculos = questionario.vinculos.filter(v => v.idCoordenador !== idCoordenador);
-    questionario.vinculos.push({ idCoordenador, idPlanilha });
-
-    await db.run(
-      `UPDATE Questionarios SET documento = ? WHERE idInterno = ?`,
-      [JSON.stringify(questionario), id]
+    const linhas = await db.all(
+      `SELECT id, dataSubmissao, conteudo FROM Respostas WHERE idQuestionario = ? ORDER BY id DESC`,
+      [id]
     );
 
-    // Formata a planilha nova
-    await sheetsService.inicializarPlanilha(idPlanilha, questionario);
+    const respostasLimpas = linhas.map(linha => {
+      try {
+        const conteudoDescriptografado = descriptografarDado(linha.conteudo);
+        return {
+          id: linha.id,
+          dataSubmissao: linha.dataSubmissao,
+          conteudo: JSON.parse(conteudoDescriptografado)
+        };
+      } catch (err) {
+        // Se cair aqui, a chave do sistema mudou ou o banco corrompeu
+        return { id: linha.id, dataSubmissao: linha.dataSubmissao, conteudo: { erro: "Falha ao descriptografar" } };
+      }
+    });
 
-    res.status(200).json({ mensagem: 'Vínculo feito com sucesso.', idPlanilha });
+    res.status(200).json(respostasLimpas);
   } catch (error) {
-    console.error("Erro ao vincular:", error);
     res.status(500).json({ erro: error.message });
   }
 };

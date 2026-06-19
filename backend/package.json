@@ -25,8 +25,8 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
-      "oneClick": false, 
-      "allowToChangeInstallationDirectory": true, 
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Dynamic QA"
@@ -37,8 +37,10 @@
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "googleapis": "^173.0.0",
+    "node-machine-id": "^1.1.12",
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1"
   },
