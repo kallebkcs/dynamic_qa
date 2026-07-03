@@ -118,6 +118,57 @@ dynamic_qa/
 └── package.json
 ```
 ---
+# Arquitetura do Sistema
+```text
+
+
+                        Usuário
+                           │
+                           ▼
+                   Interface Web (Vue.js)
+                           │
+                     Requisições HTTP
+                           │
+                           ▼
+                   API REST (Express.js)
+                           │
+          ┌────────────────┴────────────────┐
+          │                                 │
+          ▼                                 ▼
+  Autenticação                 Questionários / Usuários
+          │                                 │
+          └────────────────┬────────────────┘
+                           ▼
+                    SQLite Database
+````
+---
+# Fluxo da Aplicação
+``` text
+Login
+   │
+   ▼
+Autenticação
+   │
+   ▼
+Dashboard
+   │
+   ├───────────────┐
+   ▼               ▼
+Coordenador     Monitor
+   │               │
+   ▼               ▼
+Criar         Aplicar
+Questionário  Questionário
+   │               │
+   └──────┬────────┘
+          ▼
+Salvar Respostas
+          ▼
+Gerar Diagnóstico
+          ▼
+Emitir Relatório
+````
+---
 ## Funcionalidades
 * Criação e edição de questionários com cálculo de pesos e equações.
 * Importação e exportação direta de arquivos `.json`.
