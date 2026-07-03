@@ -148,7 +148,7 @@ dynamic_qa/
 # Fluxo da Aplicação
 
 ``` text
-Login
+Login/Cadastro
    │
    ▼
 Autenticação
