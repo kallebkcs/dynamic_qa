@@ -64,6 +64,60 @@ Este projeto foi desenvolvido como trabalho final da disciplina **Projeto de Sis
 
 Seu principal objetivo é aplicar, de forma integrada, conhecimentos adquiridos ao longo do curso nas áreas de desenvolvimento de software, bancos de dados, interfaces web e sistemas computacionais, propondo uma solução tecnológica para apoiar o processo de avaliação de sarcopenia por meio da digitalização dos questionários e da automatização da geração de diagnósticos e relatórios.
 
+---
+
+# Estrutura do Projeto
+
+```text
+dynamic_qa/
+│
+├── backend/                  # API REST (Node.js + Express)
+│   ├── controllers/          # Regras de negócio
+│   ├── middleware/           # Autenticação e validações
+│   ├── models/               # Modelos do banco
+│   ├── routes/               # Rotas da API
+│   ├── database/             # Configuração do SQLite
+│   ├── services/             # Serviços da aplicação
+│   └── server.js             # Inicialização da API
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/       # Componentes reutilizáveis
+│   │   │   ├── AvisoToast.vue
+│   │   │   ├── BlocoLogica.vue
+│   │   │   ├── ConfirmModal.vue
+│   │   │   ├── TipoEscolha.vue
+│   │   │   ├── TipoEquacao.vue
+│   │   │   └── TipoNumerico.vue
+│   │   │
+│   │   ├── views/            # Páginas da aplicação
+│   │   │   ├── LoginView.vue
+│   │   │   ├── CadastroView.vue
+│   │   │   ├── HomeView.vue
+│   │   │   ├── AdministradorView.vue
+│   │   │   ├── CoordenadorView.vue
+│   │   │   ├── MonitorView.vue
+│   │   │   ├── CriacaoQuestionarioView.vue
+│   │   │   ├── QuestionarioView.vue
+│   │   │   └── VisualizarRespostasView.vue
+│   │   │
+│   │   ├── router/
+│   │   │   └── index.js
+│   │   │
+│   │   ├── utils/
+│   │   │   └── presetQuestions.js
+│   │   │
+│   │   ├── App.vue
+│   │   └── main.js
+│   │
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── README.md
+└── package.json
+```
+---
 ## Funcionalidades
 * Criação e edição de questionários com cálculo de pesos e equações.
 * Importação e exportação direta de arquivos `.json`.
