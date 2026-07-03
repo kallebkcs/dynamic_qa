@@ -118,7 +118,9 @@ dynamic_qa/
 └── package.json
 ```
 ---
+
 # Arquitetura do Sistema
+
 ```text
 
 
@@ -142,7 +144,9 @@ dynamic_qa/
                     SQLite Database
 ````
 ---
+
 # Fluxo da Aplicação
+
 ``` text
 Login
    │
@@ -169,6 +173,7 @@ Gerar Diagnóstico
 Emitir Relatório
 ````
 ---
+
 ## Funcionalidades
 * Criação e edição de questionários com cálculo de pesos e equações.
 * Importação e exportação direta de arquivos `.json`.
