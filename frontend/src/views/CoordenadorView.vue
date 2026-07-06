@@ -9,7 +9,7 @@
 
       <div class="acoes">
         <button @click="voltar">
-          Voltar
+          VOLTAR
         </button>
       </div>
     </header>

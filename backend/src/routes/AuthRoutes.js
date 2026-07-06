@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   login,
   cadastrarUsuario,
-  listarCoordenadores,
+  contarCoordenadores,
   removerUsuario,
   listarMonitores,
   cadastrarPaciente,
@@ -16,7 +16,7 @@ const {
 
 router.post('/login', login);
 router.post('/usuarios', cadastrarUsuario);
-router.get('/coordenadores', listarCoordenadores);
+router.get('/coordenadores', contarCoordenadores);
 router.delete('/usuarios/:cpf', removerUsuario); 
 router.get('/usuarios/monitor', listarMonitores);
 router.post('/pacientes', cadastrarPaciente);

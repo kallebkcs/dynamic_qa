@@ -13,9 +13,6 @@ const perfilUsuario = ref('');
 const toastRef = ref(null);
 const confirmRef = ref(null);
 
-// Considerando que tenho o idCoordenador
-const idCoordenador = ref('id_do_coordenador_atual');
-
 // Abrir opções de questionário //
 const menuAbertoId = ref(null);
 const toggleMenu = (id) => {
@@ -88,7 +85,6 @@ const carregarQuestionarios = async () => {
 
       questionarios.value = dados.map(q => ({
         ...q,
-        idPlanilhaCoordenador: null
       }));
 
     }
@@ -275,7 +271,7 @@ const excluirQuestionario = async (id) => {
       <h1>Questionários</h1>
       <div class="acoes">
         <template v-if="perfilUsuario !== 'monitor'">
-           <button class="btn-cadastrar" @click="router.push('/coordenador')">Cadastrar Monitor/Paciente</button>
+           <button class="btn-cadastrar" @click="router.push('/coordenador')">CADASTRAR</button>
         </template>
         <template v-if="perfilUsuario !== 'coordenador'">
            <button class="btn-cadastrar" @click="router.push('/monitor')">Meus Pacientes</button>
@@ -308,15 +304,17 @@ const excluirQuestionario = async (id) => {
       </div>
     </div>
     <template v-if="perfilUsuario !== 'monitor'">
-    <button @click="router.push('/criacao-questionario')">CRIAR QUESTIONÁRIO</button>
-    <input 
-      type="file" 
-      ref="inputArquivo" 
-      accept=".json" 
-      style="display: none" 
-      @change="processarImportacao" 
-    />
-    <button @click="abrirSeletorArquivo">IMPORTAR QUESTIONÁRIO</button>
+    <div class="acoes">
+      <button @click="router.push('/criacao-questionario')">CRIAR QUESTIONÁRIO</button>
+      <input 
+        type="file" 
+        ref="inputArquivo" 
+        accept=".json" 
+        style="display: none" 
+        @change="processarImportacao" 
+      />
+      <button @click="abrirSeletorArquivo">IMPORTAR QUESTIONÁRIO</button>
+    </div>
     </template>
   </main>
 
@@ -373,6 +371,8 @@ const excluirQuestionario = async (id) => {
 .topo {
   display: flex;
   justify-content: space-between;
+  background: transparent;
+  box-shadow: none;
   align-items: center;
   gap: 18px;
   padding-bottom: 18px;
@@ -404,10 +404,18 @@ const excluirQuestionario = async (id) => {
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 }
 
+.info {
+  flex: 1;
+  padding-right: 24px;
+  min-width: 0;
+}
+
 .info p {
   margin: 5px 0 0 0;
   font-size: 0.9em;
   color: #666;
+  overflow-wrap: break-word; 
+  word-wrap: break-word;
 }
 
 button {
@@ -435,33 +443,37 @@ button.danger {
   background: #ef4444;
 }
 
-.dropdown-menu button, 
-.dropdown-menu .button-link {
+.dropdown-menu button {
   display: block;
   width: 100%;
   box-sizing: border-box; 
   margin: 0;
   
   font-family: inherit; 
-  font-weight: 700;
-  font-size: 1rem; 
-  
+  font-weight: 600;
+  font-size: 1rem;
+
   text-decoration: none;
-  color: black;
-  background: rgba(148, 163, 184, 0.28);
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 10px;
   text-align: center;
   cursor: pointer;
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   
-  border: 1px solid black;
-  border-top: none;
+  border: 0.5px solid rgba(242, 242, 242);
+  border-radius: 15px;
 }
 
-.dropdown-menu button:first-child {
-  border-top: 1px solid black;
+
+.dropdown-menu button:hover {
+  background:rgb(177, 190, 208);;
+  transform: none;
+  box-shadow: 0 0 0;
 }
 
-button:hover, .button-link:hover {
+button:hover {
   background: #eeeeee00;
 }
 
@@ -516,7 +528,7 @@ button:hover, .button-link:hover {
   top: 100%;
   right: 0;
   background-color: rgba(148, 163, 184, 0.082);
-  min-width: 180px;
+  min-width: 150px;
   box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
   z-index: 10;
   display: flex;

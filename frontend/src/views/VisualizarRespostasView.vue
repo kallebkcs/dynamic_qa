@@ -3,7 +3,7 @@
   <div class="container">
     <div class="topo">
       <h1>Respostas do Questionário</h1>
-      <div>
+      <div class="acoes">
         <button @click="router.push('/home')">Voltar</button>
         <div class="dropdown-container" v-if="respostas.length > 0">
             <button @click="dropdownAberto = !dropdownAberto" class="btn-exportar">Exportar ▾</button>
@@ -385,6 +385,13 @@ button {
   transform: translateY(0);
   box-shadow: none;
 }
+
+.acoes {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }

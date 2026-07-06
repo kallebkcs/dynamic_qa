@@ -379,7 +379,7 @@ onMounted(carregarDados)
   <header v-if="blocoAtual">
     <div class="titulos">
       <h1>{{ questionario.titulo }}</h1>
-      <p><strong>{{ blocoAtual.titulo }}</strong></p>
+      <p><strong>Etapa: {{ blocoAtual.titulo }}</strong></p>
     </div>
     <button @click="voltarInicio" class="btn-home">VOLTAR PARA PÁGINA INICIAL</button>
   </header>
@@ -486,6 +486,7 @@ onMounted(carregarDados)
 }
 
 .btn-home {
+  width: 150px;
   position: absolute;
   right: 20px;
   background: transparent;
@@ -513,6 +514,9 @@ header {
   margin-bottom: 40px;
   text-align: center;
   animation: slideDown 0.6s ease-out;
+  flex: 1;
+  padding-right: 24px; /* Dá uma distância segura para o texto não beijar os botões */
+  min-width: 0;
 }
 
 header h1 {

@@ -6,7 +6,6 @@ import Login from '@/views/LoginView.vue'
 import Cadastro from '@/views/CadastroView.vue'
 import CoordenadorView from "@/views/CoordenadorView.vue"
 import MonitorView from "@/views/MonitorView.vue"
-import AdministradorView from "@/views/AdministradorView.vue"
 import VisualizarRespostasView from '@/views/VisualizarRespostasView.vue'
 
 const router = createRouter({

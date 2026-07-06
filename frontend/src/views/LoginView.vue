@@ -18,22 +18,12 @@
         />
       </div>
 
-      <div class="campo">
-        <label>Entrar como:</label>
-
-        <select v-model="perfil">
-          <option value="">Selecione</option>
-          <option value="coordenador">Coordenador</option>
-          <option value="monitor">Monitor</option>
-        </select>
-      </div>
-
       <div class="botoes">
         <button @click="fazerLogin">
           Entrar
         </button>
 
-        <button
+        <button v-if="!temCoordenador"
           class="btn-cadastrar"
           @click="fazerCadastro"
         >
@@ -61,10 +51,18 @@ export default {
   data() {
     return {
       cpf: "",
-      perfil: ""
+      temCoordenador: true
     }
   },
-
+  async mounted() {
+    try {
+      const resposta = await fetch('http://localhost:3000/api/coordenadores');
+      const dados = await resposta.json();
+      this.temCoordenador = dados.existe;
+    } catch (error) {
+      console.error('Falha ao espionar o banco de dados:', error);
+    }
+  },
   methods: {
     formatarCPF() {
       this.cpf = this.cpf
@@ -122,7 +120,7 @@ export default {
     },
 
     async fazerLogin() {
-      if (!this.cpf || !this.perfil) {
+      if (!this.cpf) {
         this.$refs.toastRef.mostrar(
           "Preencha todos os campos.",
           "erro"
@@ -148,7 +146,6 @@ export default {
             },
             body: JSON.stringify({
               cpf: this.cpf.replace(/\D/g, ""),
-              perfil: this.perfil
             })
           }
         );
@@ -255,6 +252,7 @@ export default {
 input,
 select {
   width: 100%;
+  box-sizing: border-box;
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid #cbd5e1;

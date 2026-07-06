@@ -2,13 +2,13 @@ const { getDB } = require('../config/db');
 
 const login = async (req, res) => {
   try {
-    const { cpf, perfil } = req.body;
+    const { cpf } = req.body;
 
     const db = getDB();
 
     const usuario = await db.get(
-      'SELECT * FROM Usuarios WHERE cpf = ? AND perfil = ?',
-      [cpf, perfil]
+      'SELECT * FROM Usuarios WHERE cpf = ?',
+      [cpf]
     );
 
     if (!usuario) {
@@ -19,9 +19,9 @@ const login = async (req, res) => {
 
     return res.json({
       cpf: usuario.cpf,
+      perfil: usuario.perfil,
       nome: usuario.nome,
       email: usuario.email,
-      perfil: usuario.perfil
     });
 
   } catch (erro) {
@@ -94,20 +94,20 @@ const cadastrarUsuario = async (req, res) => {
   }
 };
 
-const listarCoordenadores = async (req, res) => {
+const contarCoordenadores = async (req, res) => {
 
   try{
     const db = getDB();
 
     const coordenadores = await db.all(
       `
-      SELECT cpf, nome, email, perfil
+      SELECT COUNT(*) as total
       FROM Usuarios
       WHERE perfil = 'coordenador'
       `
     );
 
-    res.json(coordenadores);
+    res.json({existe: coordenadores[0].total > 0});
 
   } catch (erro) {
     console.error(erro);
@@ -355,7 +355,7 @@ const listarQuestionariosMonitor = async (req, res) => {
 module.exports = {
   login,
   cadastrarUsuario,
-  listarCoordenadores,
+  contarCoordenadores,
   removerUsuario,
   listarMonitores,
   cadastrarPaciente,
