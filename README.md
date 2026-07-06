@@ -1,5 +1,3 @@
-# Dynamic QA - Sistema de Questionários Dinâmicos
-
 <div align="center">
   
 # Dynamic QA - Sistema de Questionários Dinâmicos
